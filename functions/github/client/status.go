@@ -30,7 +30,7 @@ func (c *Client) CreateStatusOfLatestCommit(
 	number int,
 	state State,
 ) error {
-	hash, err := c.GetPRLatestCommitHash(ctx, owner, repo, number)
+	hash, err := c.GetPullRequestLatestCommitHash(ctx, owner, repo, number)
 	if err != nil {
 		return err
 	}

@@ -5,8 +5,8 @@ import (
 	"errors"
 )
 
-// GetPRLatestCommitHash gets latest commit hash in PR
-func (c *Client) GetPRLatestCommitHash(
+// GetPullRequestLatestCommitHash gets latest commit hash in PR
+func (c *Client) GetPullRequestLatestCommitHash(
 	ctx context.Context,
 	owner string,
 	repo string,

@@ -13,20 +13,19 @@ import (
 
 const clonePath = "/tmp/repo"
 
-// PullRequestEvent GitHub hooks
-func PullRequestEvent(
+// IssueCommentEvent GitHub hooks
+func IssueCommentEvent(
 	ctx context.Context,
-	hook *github.PullRequestEvent,
+	hook *github.IssueCommentEvent,
 	cli client.Clienter,
 ) error {
-	if hook.GetAction() == "opened" {
-		return processPROpened(ctx, hook, cli)
+	if hook.GetAction() == "created" {
+		return issueCreated(ctx, hook, cli)
 	}
 	return nil
 }
 
-// IssueCommentEvent GitHub hooks
-func IssueCommentEvent(
+func issueCreated(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,
@@ -44,7 +43,7 @@ func IssueCommentEvent(
 	); err != nil {
 		return err
 	}
-	hash, err := cli.GetPRLatestCommitHash(
+	hash, err := cli.GetPullRequestLatestCommitHash(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -114,68 +113,6 @@ func IssueCommentEvent(
 		}
 	}
 	return err
-}
-
-func processPROpened(
-	ctx context.Context,
-	hook *github.PullRequestEvent,
-	cli client.Clienter,
-) error {
-	if err := cli.CreateStatusOfLatestCommit(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-		client.StatePending,
-	); err != nil {
-		return err
-	}
-
-	hash, err := cli.GetPRLatestCommitHash(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-	)
-	if err != nil {
-		return err
-	}
-	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
-		return err
-	}
-
-	if err := cdk.Setup(clonePath); err != nil {
-		return err
-	}
-
-	diff, hasDiff := cdk.Diff(clonePath)
-	message := ""
-	if !hasDiff {
-		message = "\nNo stacks are updated"
-	}
-	if err := cli.CreateComment(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-		fmt.Sprintf("### cdk diff\n```%s```\n%s", diff, message),
-	); err != nil {
-		return err
-	}
-	status := client.StateSuccess
-	if hasDiff {
-		status = client.StateFailure
-	}
-	if err := cli.CreateStatusOfLatestCommit(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-		status,
-	); err != nil {
-		return err
-	}
-	return nil
 }
 
 type action string
