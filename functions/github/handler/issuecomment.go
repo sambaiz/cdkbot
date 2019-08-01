@@ -1,4 +1,4 @@
-package event
+package handler
 
 import (
 	"context"
@@ -13,19 +13,19 @@ import (
 
 const clonePath = "/tmp/repo"
 
-// HandleIssueCommentEvent handles IssueCommentEvent
-func HandleIssueCommentEvent(
+// IssueCommentEvent handles github.IssueCommentEvent
+func IssueCommentEvent(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,
 ) error {
 	if hook.GetAction() == "created" {
-		return handleIssueCreated(ctx, hook, cli)
+		return issueCreated(ctx, hook, cli)
 	}
 	return nil
 }
 
-func handleIssueCreated(
+func issueCreated(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,

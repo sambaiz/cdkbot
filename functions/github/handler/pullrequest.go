@@ -1,4 +1,4 @@
-package event
+package handler
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 	"github.com/sambaiz/cdkbot/lib/git"
 )
 
-// HandlePullRequestEvent handles PullRequestEvent
-func HandlePullRequestEvent(
+// PullRequestEvent handles github.PullRequestEvent
+func PullRequestEvent(
 	ctx context.Context,
 	hook *github.PullRequestEvent,
 	cli client.Clienter,
 ) error {
 	if hook.GetAction() == "opened" {
-		return handlePullRequestOpened(ctx, hook, cli)
+		return pullRequestOpened(ctx, hook, cli)
 	}
 	return nil
 }
 
-func handlePullRequestOpened(
+func pullRequestOpened(
 	ctx context.Context,
 	hook *github.PullRequestEvent,
 	cli client.Clienter,

@@ -1,10 +1,3 @@
 # cdkbot
 
-## Config
-
-### GITHUB_USER_NAME
-
-### GITHUB_ACCESS_TOKEN
-
-### GITHUB_WEBHOOK_SECRET
-
+Under developing
