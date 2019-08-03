@@ -1,4 +1,4 @@
-package handler
+package eventhandler
 
 import (
 	"context"
@@ -7,11 +7,12 @@ import (
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
 	"github.com/sambaiz/cdkbot/lib/cdk"
+	"github.com/sambaiz/cdkbot/lib/config"
 	"github.com/sambaiz/cdkbot/lib/git"
 )
 
-// PullRequestEvent handles github.PullRequestEvent
-func PullRequestEvent(
+// PullRequest handles github.PullRequestEvent
+func PullRequest(
 	ctx context.Context,
 	hook *github.PullRequestEvent,
 	cli client.Clienter,
@@ -49,12 +50,16 @@ func pullRequestOpened(
 	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
 		return err
 	}
-
-	if err := cdk.Setup(clonePath); err != nil {
+	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
+	if err != nil {
 		return err
 	}
+	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 
-	diff, hasDiff := cdk.Diff(clonePath)
+	if err := cdk.Setup(cdkPath); err != nil {
+		return err
+	}
+	diff, hasDiff := cdk.Diff(cdkPath)
 	message := ""
 	if !hasDiff {
 		message = "\nNo stacks are updated"

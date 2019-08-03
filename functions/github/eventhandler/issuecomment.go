@@ -1,4 +1,4 @@
-package handler
+package eventhandler
 
 import (
 	"context"
@@ -8,13 +8,14 @@ import (
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
 	"github.com/sambaiz/cdkbot/lib/cdk"
+	"github.com/sambaiz/cdkbot/lib/config"
 	"github.com/sambaiz/cdkbot/lib/git"
 )
 
 const clonePath = "/tmp/repo"
 
-// IssueCommentEvent handles github.IssueCommentEvent
-func IssueCommentEvent(
+// IssueComment handles github.IssueCommentEvent
+func IssueComment(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,
@@ -55,16 +56,21 @@ func issueCreated(
 	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
 		return err
 	}
+	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
+	if err != nil {
+		return err
+	}
+	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 
-	if err := cdk.Setup(clonePath); err != nil {
+	if err := cdk.Setup(cdkPath); err != nil {
 		return err
 	}
 
 	switch cmd.action {
 	case actionDiff:
-		err = doActionDiff(ctx, hook, cli, cmd.args)
+		err = doActionDiff(ctx, hook, cli, cdkPath, cmd.args)
 	case actionDeploy:
-		err = doActionDeploy(ctx, hook, cli, cmd.args)
+		err = doActionDeploy(ctx, hook, cli, cdkPath, cmd.args)
 	}
 	return err
 }
@@ -105,9 +111,10 @@ func doActionDiff(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,
+	cdkPath string,
 	cmdArgs string,
 ) error {
-	diff, _ := cdk.Diff(clonePath)
+	diff, _ := cdk.Diff(cdkPath)
 	if err := cli.CreateComment(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
@@ -124,21 +131,22 @@ func doActionDeploy(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 	cli client.Clienter,
+	cdkPath string,
 	cmdArgs string,
 ) error {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
-		stacks, err := cdk.List(clonePath)
+		stacks, err := cdk.List(cdkPath)
 		if err != nil {
 			return err
 		}
 		args = strings.Join(stacks, " ")
 	}
-	result, err := cdk.Deploy(clonePath, args)
+	result, err := cdk.Deploy(cdkPath, args)
 	if err != nil {
 		return err
 	}
-	_, hasDiff := cdk.Diff(clonePath)
+	_, hasDiff := cdk.Diff(cdkPath)
 	message := "All stacks have been deployed :tada:"
 	if hasDiff {
 		message = "To be continued"
