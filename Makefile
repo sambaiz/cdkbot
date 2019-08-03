@@ -16,4 +16,6 @@ install-tools:
 
 lint:
 	golint -set_exit_status $$(go list ./...)
-	go vet ./...
+
+test:
+	go test ./...

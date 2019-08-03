@@ -1,0 +1,8 @@
+cdkRoot: .
+targets:
+  - branch: develop
+    contexts:
+      env: stg
+  - branch: master
+    contexts:
+      env: prd
