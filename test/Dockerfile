@@ -1,6 +1,6 @@
 
 
-FROM lambci/lambda:build-go1.x AS build
+FROM cdkbot-npmbin
 
 ARG GO_VERSION=1.12.7
 

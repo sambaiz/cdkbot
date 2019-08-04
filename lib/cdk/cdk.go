@@ -33,15 +33,22 @@ func List(repoPath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(string(out), "\n"), nil
+	lists := strings.Split(strings.Trim(string(out), "\n"), "\n")[3:]
+	return lists, nil
 }
 
-// Diff stack
+// Diff stack and returns (diff, hasDiff)
 func Diff(repoPath string) (string, bool) {
 	cmd := exec.Command("npm", "run", "cdk", "--", "diff")
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()
-	return string(out), cmd.ProcessState.ExitCode() != 0
+	lines := []string{}
+	for _, line := range strings.Split(strings.Trim(string(out), "\n"), "\n")[3:] {
+		if !strings.HasPrefix(line, "npm ERR!") {
+			lines = append(lines, line)
+		}
+	}
+	return strings.Trim(strings.Join(lines, "\n"), "\n"), cmd.ProcessState.ExitCode() != 0
 }
 
 // Deploy stack
@@ -49,5 +56,6 @@ func Deploy(repoPath string, stacks string) (string, error) {
 	cmd := exec.Command("npm", "run", "cdk", "--", "deploy", "--require-approval", "never", stacks)
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()
-	return string(out), nil
+	result := strings.Join(strings.Split(strings.Trim(string(out), "\n"), "\n")[3:], "\n")
+	return result, nil
 }

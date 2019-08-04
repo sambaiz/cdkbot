@@ -18,8 +18,13 @@ lint:
 	golint -set_exit_status $$(go list ./...)
 
 test:
+	docker build -t cdkbot-npmbin ./npm-lambda-layer
 	docker build -t cdkbot-test -f ./test/Dockerfile .
-	docker run -v `pwd`:/root/cdkbot:ro cdkbot-test make _test
+	docker rm -f cdkbot-test || true
+	docker run -itd --name cdkbot-test cdkbot-test /bin/sh
+	docker cp . cdkbot-test:/root/cdkbot
+	docker exec cdkbot-test make _test
+	docker rm -f cdkbot-test
 
 _test:
 	go test ./...

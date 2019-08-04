@@ -15,7 +15,7 @@ func TestRead(t *testing.T) {
 	}{
 		{
 			title: "ssuccess",
-			path:  "./fixture/cdkbot.yml",
+			path:  "./test/cdkbot.yml",
 			expected: &Config{
 				CDKRoot: ".",
 				Targets: []Target{
@@ -36,12 +36,12 @@ func TestRead(t *testing.T) {
 		},
 		{
 			title:   "file is not found",
-			path:    "./fixture/notfound.yml",
+			path:    "./test/notfound.yml",
 			isError: true,
 		},
 		{
 			title:   "invalid yaml",
-			path:    "./fixture/invalid_yaml.yml",
+			path:    "./test/invalid_yaml.yml",
 			isError: true,
 		},
 	}
