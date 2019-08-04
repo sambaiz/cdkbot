@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	"github.com/sambaiz/cdkbot/functions/github/process"
+	"github.com/sambaiz/cdkbot/functions/github/eventhandler"
 	"go.uber.org/zap"
 )
 
@@ -30,15 +30,15 @@ func initLogger() {
 
 type response events.APIGatewayProxyResponse
 
-func handler(event events.APIGatewayProxyRequest) (response, error) {
+func handler(req events.APIGatewayProxyRequest) (response, error) {
 	ctx := context.Background()
-	if err := github.ValidateSignature(event.Headers["X-Hub-Signature"], []byte(event.Body), []byte(webhookSecret)); err != nil {
+	if err := github.ValidateSignature(req.Headers["X-Hub-Signature"], []byte(req.Body), []byte(webhookSecret)); err != nil {
 		logger.Info("Signature is invalid", zap.Error(err))
 		return response{
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
-	hook, err := github.ParseWebHook(event.Headers["X-GitHub-Event"], []byte(event.Body))
+	hook, err := github.ParseWebHook(req.Headers["X-GitHub-Event"], []byte(req.Body))
 	if err != nil {
 		logger.Error("Failed to parse hook", zap.Error(err))
 		return response{
@@ -49,12 +49,12 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 	cli := client.New(ctx)
 	switch hook := hook.(type) {
 	case *github.PullRequestEvent:
-		err = process.PullRequestEvent(ctx, hook, cli)
+		err = eventhandler.PullRequest(ctx, hook, cli)
 	case *github.IssueCommentEvent:
-		err = process.IssueCommentEvent(ctx, hook, cli)
+		err = eventhandler.IssueComment(ctx, hook, cli)
 	}
 	if err != nil {
-		logger.Error("Failed to process an event", zap.Error(err))
+		logger.Error("Failed to event an event", zap.Error(err))
 		return response{
 			StatusCode: http.StatusInternalServerError,
 		}, err

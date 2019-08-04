@@ -10,3 +10,5 @@ jobs:
       - checkout
       - run: make install-tools
       - run: make lint
+      - setup_remote_docker
+      - run: make test

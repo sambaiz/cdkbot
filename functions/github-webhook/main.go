@@ -27,7 +27,6 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 		Payload:        payload,
 		InvocationType: aws.String("Event"),
 	}
-	// avoid GitHub Webhook timeout
 	if _, err := svc.Invoke(input); err != nil {
 		return response{
 			StatusCode: http.StatusInternalServerError,

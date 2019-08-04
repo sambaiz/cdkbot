@@ -24,7 +24,7 @@ type Clienter interface {
 		number int,
 		body string,
 	) error
-	GetPRLatestCommitHash(
+	GetPullRequestLatestCommitHash(
 		ctx context.Context,
 		owner string,
 		repo string,
