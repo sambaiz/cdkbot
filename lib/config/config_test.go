@@ -14,7 +14,7 @@ func TestRead(t *testing.T) {
 		isError  bool
 	}{
 		{
-			title: "ssuccess",
+			title: "success",
 			path:  "./test/cdkbot.yml",
 			expected: &Config{
 				CDKRoot: ".",
