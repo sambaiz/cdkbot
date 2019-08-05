@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClone(t *testing.T) {
+func TestClientClone(t *testing.T) {
 	hash := "334706a61eb25c944efbf76074e7d48ea9948b9a"
 	err := new(Client).Clone("https://github.com/sambaiz/cdkbot", "/tmp/cdkbot", &hash)
 	assert.Nil(t, err)

@@ -82,11 +82,11 @@ type command struct {
 	args   string
 }
 
-func parseCommand(comment string) *command {
-	if !strings.HasPrefix(comment, "/") {
+func parseCommand(cmd string) *command {
+	if !strings.HasPrefix(cmd, "/") {
 		return nil
 	}
-	parts := strings.Split(comment, " ")
+	parts := strings.Split(cmd, " ")
 	switch parts[0] {
 	case "/deploy":
 		return &command{
