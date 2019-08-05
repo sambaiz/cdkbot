@@ -7,35 +7,30 @@ import (
 
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	"github.com/sambaiz/cdkbot/lib/cdk"
-	"github.com/sambaiz/cdkbot/lib/config"
-	"github.com/sambaiz/cdkbot/lib/git"
 )
 
 const clonePath = "/tmp/repo"
 
 // IssueComment handles github.IssueCommentEvent
-func IssueComment(
+func (e *EventHandler) IssueComment(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
-	cli client.Clienter,
 ) error {
 	if hook.GetAction() == "created" {
-		return issueCreated(ctx, hook, cli)
+		return e.issueCreated(ctx, hook)
 	}
 	return nil
 }
 
-func issueCreated(
+func (e *EventHandler) issueCreated(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
-	cli client.Clienter,
 ) error {
 	cmd := parseCommand(hook.GetComment().GetBody())
 	if cmd == nil {
 		return nil
 	}
-	if err := cli.CreateStatusOfLatestCommit(
+	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -44,7 +39,7 @@ func issueCreated(
 	); err != nil {
 		return err
 	}
-	hash, err := cli.GetPullRequestLatestCommitHash(
+	hash, err := e.cli.GetPullRequestLatestCommitHash(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -53,24 +48,24 @@ func issueCreated(
 	if err != nil {
 		return err
 	}
-	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
+	if err := e.git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
 		return err
 	}
-	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
+	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
 	if err != nil {
 		return err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 
-	if err := cdk.Setup(cdkPath); err != nil {
+	if err := e.cdk.Setup(cdkPath); err != nil {
 		return err
 	}
 
 	switch cmd.action {
 	case actionDiff:
-		err = doActionDiff(ctx, hook, cli, cdkPath, cmd.args)
+		err = e.doActionDiff(ctx, hook, cdkPath, cmd.args)
 	case actionDeploy:
-		err = doActionDeploy(ctx, hook, cli, cdkPath, cmd.args)
+		err = e.doActionDeploy(ctx, hook, cdkPath, cmd.args)
 	}
 	return err
 }
@@ -107,15 +102,14 @@ func parseCommand(comment string) *command {
 	return nil
 }
 
-func doActionDiff(
+func (e *EventHandler) doActionDiff(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
-	cli client.Clienter,
 	cdkPath string,
 	cmdArgs string,
 ) error {
-	diff, _ := cdk.Diff(cdkPath)
-	if err := cli.CreateComment(
+	diff, _ := e.cdk.Diff(cdkPath)
+	if err := e.cli.CreateComment(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -127,31 +121,30 @@ func doActionDiff(
 	return nil
 }
 
-func doActionDeploy(
+func (e *EventHandler) doActionDeploy(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
-	cli client.Clienter,
 	cdkPath string,
 	cmdArgs string,
 ) error {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
-		stacks, err := cdk.List(cdkPath)
+		stacks, err := e.cdk.List(cdkPath)
 		if err != nil {
 			return err
 		}
 		args = strings.Join(stacks, " ")
 	}
-	result, err := cdk.Deploy(cdkPath, args)
+	result, err := e.cdk.Deploy(cdkPath, args)
 	if err != nil {
 		return err
 	}
-	_, hasDiff := cdk.Diff(cdkPath)
+	_, hasDiff := e.cdk.Diff(cdkPath)
 	message := "All stacks have been deployed :tada:"
 	if hasDiff {
 		message = "To be continued"
 	}
-	if err := cli.CreateComment(
+	if err := e.cli.CreateComment(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -164,7 +157,7 @@ func doActionDeploy(
 	if hasDiff {
 		status = client.StateFailure
 	}
-	if err := cli.CreateStatusOfLatestCommit(
+	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),

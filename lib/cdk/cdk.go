@@ -7,8 +7,17 @@ import (
 	"strings"
 )
 
+type Clienter interface {
+	Setup(repoPath string) error
+	List(repoPath string) ([]string, error)
+	Diff(repoPath string) (string, bool)
+	Deploy(repoPath string, stacks string) (string, error)
+}
+
+type Client struct{}
+
 // Setup env to run cdk commands
-func Setup(repoPath string) error {
+func (*Client) Setup(repoPath string) error {
 	if err := os.Setenv("NPM_CONFIG_USERCONFIG", "/opt/nodejs/.npmrc"); err != nil {
 		return err
 	}
@@ -26,7 +35,7 @@ func Setup(repoPath string) error {
 }
 
 // List stack
-func List(repoPath string) ([]string, error) {
+func (*Client) List(repoPath string) ([]string, error) {
 	cmd := exec.Command("npm", "run", "cdk", "--", "list")
 	cmd.Dir = repoPath
 	out, err := cmd.Output()
@@ -38,7 +47,7 @@ func List(repoPath string) ([]string, error) {
 }
 
 // Diff stack and returns (diff, hasDiff)
-func Diff(repoPath string) (string, bool) {
+func (*Client) Diff(repoPath string) (string, bool) {
 	cmd := exec.Command("npm", "run", "cdk", "--", "diff")
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()
@@ -52,7 +61,7 @@ func Diff(repoPath string) (string, bool) {
 }
 
 // Deploy stack
-func Deploy(repoPath string, stacks string) (string, error) {
+func (*Client) Deploy(repoPath string, stacks string) (string, error) {
 	cmd := exec.Command("npm", "run", "cdk", "--", "deploy", "--require-approval", "never", stacks)
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()

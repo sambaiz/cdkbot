@@ -47,7 +47,7 @@ func TestRead(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
-			config, err := Read(test.path)
+			config, err := new(Reader).Read(test.path)
 			if test.isError {
 				assert.NotNil(t, err)
 			} else {

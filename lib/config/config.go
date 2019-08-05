@@ -6,6 +6,14 @@ import (
 	"github.com/go-yaml/yaml"
 )
 
+// Readerer is interface of config reader
+type Readerer interface {
+	Read(path string) (*Config, error)
+}
+
+// Reader is config reader
+type Reader struct{}
+
 // Config is cdkbot config
 type Config struct {
 	CDKRoot string   `yaml:"cdkRoot"`
@@ -19,7 +27,7 @@ type Target struct {
 }
 
 // Read config
-func Read(path string) (*Config, error) {
+func (*Reader) Read(path string) (*Config, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

@@ -6,29 +6,24 @@ import (
 
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	"github.com/sambaiz/cdkbot/lib/cdk"
-	"github.com/sambaiz/cdkbot/lib/config"
-	"github.com/sambaiz/cdkbot/lib/git"
 )
 
 // PullRequest handles github.PullRequestEvent
-func PullRequest(
+func (e *EventHandler) PullRequest(
 	ctx context.Context,
 	hook *github.PullRequestEvent,
-	cli client.Clienter,
 ) error {
 	if hook.GetAction() == "opened" {
-		return pullRequestOpened(ctx, hook, cli)
+		return e.pullRequestOpened(ctx, hook)
 	}
 	return nil
 }
 
-func pullRequestOpened(
+func (e *EventHandler) pullRequestOpened(
 	ctx context.Context,
 	hook *github.PullRequestEvent,
-	cli client.Clienter,
 ) error {
-	if err := cli.CreateStatusOfLatestCommit(
+	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -38,7 +33,7 @@ func pullRequestOpened(
 		return err
 	}
 
-	hash, err := cli.GetPullRequestLatestCommitHash(
+	hash, err := e.cli.GetPullRequestLatestCommitHash(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -47,24 +42,24 @@ func pullRequestOpened(
 	if err != nil {
 		return err
 	}
-	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
+	if err := e.git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
 		return err
 	}
-	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
+	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
 	if err != nil {
 		return err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 
-	if err := cdk.Setup(cdkPath); err != nil {
+	if err := e.cdk.Setup(cdkPath); err != nil {
 		return err
 	}
-	diff, hasDiff := cdk.Diff(cdkPath)
+	diff, hasDiff := e.cdk.Diff(cdkPath)
 	message := ""
 	if !hasDiff {
 		message = "\nNo stacks are updated"
 	}
-	if err := cli.CreateComment(
+	if err := e.cli.CreateComment(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
@@ -77,7 +72,7 @@ func pullRequestOpened(
 	if hasDiff {
 		status = client.StateFailure
 	}
-	if err := cli.CreateStatusOfLatestCommit(
+	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
