@@ -15,7 +15,7 @@ func TestReaderRead(t *testing.T) {
 	}{
 		{
 			title: "success",
-			in:    "./test/cdkbot.yml",
+			in:    "./test_config/cdkbot.yml",
 			out: &Config{
 				CDKRoot: ".",
 				Targets: []Target{
@@ -36,12 +36,12 @@ func TestReaderRead(t *testing.T) {
 		},
 		{
 			title:   "file is not found",
-			in:      "./test/notfound.yml",
+			in:      "./test_config/notfound.yml",
 			isError: true,
 		},
 		{
 			title:   "invalid yaml",
-			in:      "./test/invalid_yaml.yml",
+			in:      "./test_config/invalid_yaml.yml",
 			isError: true,
 		},
 	}

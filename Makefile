@@ -13,6 +13,7 @@ build:
 
 install-tools:
 	go get -u golang.org/x/lint/golint
+	go get -u github.com/golang/mock/mockgen
 
 lint:
 	golint -set_exit_status $$(go list ./...)
@@ -28,3 +29,9 @@ test:
 
 _test:
 	go test ./...
+
+mock:
+	mockgen -package mock -source lib/cdk/cdk.go -destination lib/cdk/mock/cdk_mock.go
+	mockgen -package mock -source lib/config/config.go -destination lib/config/mock/config_mock.go
+	mockgen -package mock -source lib/git/git.go -destination lib/git/mock/git_mock.go
+	mockgen -package mock -source functions/github/client/client.go -destination functions/github/client/mock/client_mock.go
