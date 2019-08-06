@@ -17,6 +17,7 @@ type EventHandler struct {
 	cdk    cdk.Clienter
 }
 
+// New event handler
 func New(ctx context.Context) *EventHandler {
 	return &EventHandler{
 		cli:    client.New(ctx),

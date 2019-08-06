@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Clienter is interface of CDK client
 type Clienter interface {
 	Setup(repoPath string) error
 	List(repoPath string) ([]string, error)
@@ -14,6 +15,7 @@ type Clienter interface {
 	Deploy(repoPath string, stacks string) (string, error)
 }
 
+// Client is CDK client
 type Client struct{}
 
 // Setup env to run cdk commands
@@ -21,7 +23,8 @@ func (*Client) Setup(repoPath string) error {
 	if err := os.Setenv("NPM_CONFIG_USERCONFIG", "/opt/nodejs/.npmrc"); err != nil {
 		return err
 	}
-	// avoid cdk error https://github.com/aws/aws-cdk/blob/a357bdef775ad30d726090150d496bcb24d576be/packages/aws-cdk/lib/api/util/account-cache.ts#L24
+	// Currently, CDK writes cache at $HOME so it needs to change it.
+	// https://github.com/aws/aws-cdk/blob/a357bdef775ad30d726090150d496bcb24d576be/packages/aws-cdk/lib/api/util/account-cache.ts#L24
 	if err := os.Setenv("HOME", "/tmp"); err != nil {
 		return err
 	}
@@ -57,6 +60,7 @@ func (*Client) Diff(repoPath string) (string, bool) {
 			lines = append(lines, line)
 		}
 	}
+	// If exit code is 0, there are no diffs.
 	return strings.Trim(strings.Join(lines, "\n"), "\n"), cmd.ProcessState.ExitCode() != 0
 }
 
