@@ -108,13 +108,26 @@ func (e *EventHandler) doActionDiff(
 	cdkPath string,
 	cmdArgs string,
 ) error {
-	diff, _ := e.cdk.Diff(cdkPath)
+	diff, hasDiff := e.cdk.Diff(cdkPath)
 	if err := e.cli.CreateComment(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
 		hook.GetIssue().GetNumber(),
 		fmt.Sprintf("### cdk diff %s\n```%s```", strings.TrimSpace(cmdArgs), diff),
+	); err != nil {
+		return err
+	}
+	status := client.StateSuccess
+	if hasDiff {
+		status = client.StateFailure
+	}
+	if err := e.cli.CreateStatusOfLatestCommit(
+		ctx,
+		hook.GetRepo().GetOwner().GetLogin(),
+		hook.GetRepo().GetName(),
+		hook.GetIssue().GetNumber(),
+		status,
 	); err != nil {
 		return err
 	}
