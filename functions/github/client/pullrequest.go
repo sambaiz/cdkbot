@@ -22,7 +22,7 @@ func (c *Client) GetPullRequestLatestCommitHash(
 	return commits[len(commits)-1].GetSHA(), nil
 }
 
-// GetPullRequest gets base branch of pull request
+// GetPullRequestBaseBranch gets base branch of pull request
 func (c *Client) GetPullRequestBaseBranch(
 	ctx context.Context,
 	owner string,

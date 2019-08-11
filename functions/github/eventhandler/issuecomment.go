@@ -82,8 +82,6 @@ func (e *EventHandler) issueCommentCreated(
 	}
 	if hasDiff {
 		return client.StateFailure, nil
-	} else {
-		return client.StateSuccess, nil
 	}
 	return client.StateSuccess, nil
 }
