@@ -18,15 +18,13 @@ func TestReaderRead(t *testing.T) {
 			in:    "./test_config/cdkbot.yml",
 			out: &Config{
 				CDKRoot: ".",
-				Targets: []Target{
-					{
-						Branch: "develop",
+				Targets: map[string]Target{
+					"develop": {
 						Contexts: map[string]string{
 							"env": "stg",
 						},
 					},
-					{
-						Branch: "master",
+					"master": {
 						Contexts: map[string]string{
 							"env": "prd",
 						},

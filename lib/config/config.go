@@ -14,15 +14,14 @@ type Readerer interface {
 // Reader is config reader
 type Reader struct{}
 
-// Config is cdkbot config
+// Config is cdkbot config. Targets keys are branch name.
 type Config struct {
-	CDKRoot string   `yaml:"cdkRoot"`
-	Targets []Target `yaml:"targets"`
+	CDKRoot string            `yaml:"cdkRoot"`
+	Targets map[string]Target `yaml:"targets"`
 }
 
 // Target is cdkbot target
 type Target struct {
-	Branch   string            `yaml:"branch"`
 	Contexts map[string]string `yaml:"contexts"`
 }
 

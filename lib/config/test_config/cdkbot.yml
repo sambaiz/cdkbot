@@ -1,8 +1,8 @@
 cdkRoot: .
 targets:
-  - branch: develop
+  develop:
     contexts:
       env: stg
-  - branch: master
+  master:
     contexts:
       env: prd
