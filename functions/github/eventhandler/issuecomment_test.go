@@ -115,7 +115,8 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		).Return(nil)
 		configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 		githubClient.EXPECT().GetPullRequestBaseBranch(ctx, event.ownerName, event.repoName, event.issueNumber).Return(baseBranch, nil)
-		if _, ok := cfg.Targets[baseBranch]; !ok {
+		target, ok := cfg.Targets[baseBranch]
+		if !ok {
 			return &EventHandler{
 				cli:    githubClient,
 				git:    gliClient,
@@ -131,29 +132,27 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		if cmd.action == actionDiff {
 			// doActionDiff()
 			result := "result"
-			args := ""
-			cdkClient.EXPECT().Diff(cdkPath).Return(result, true)
+			cdkClient.EXPECT().Diff(cdkPath, cmd.args, target.Contexts).Return(result, true)
 			githubClient.EXPECT().CreateComment(
 				ctx,
 				event.ownerName,
 				event.repoName,
 				event.issueNumber,
-				fmt.Sprintf("### cdk diff %s\n```%s```", args, result),
+				fmt.Sprintf("### cdk diff %s\n```%s```", cmd.args, result),
 			).Return(nil)
 			githubClient.EXPECT().CreateStatusOfLatestCommit(
 				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateFailure).Return(nil)
 		} else if cmd.action == actionDeploy {
 			// doActionDeploy()
 			result := "result"
-			args := "TestStack"
-			cdkClient.EXPECT().Deploy(cdkPath, args).Return(result, nil)
-			cdkClient.EXPECT().Diff(cdkPath).Return("", false)
+			cdkClient.EXPECT().Deploy(cdkPath, cmd.args, target.Contexts).Return(result, nil)
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", false)
 			githubClient.EXPECT().CreateComment(
 				ctx,
 				event.ownerName,
 				event.repoName,
 				event.issueNumber,
-				fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, "All stacks have been deployed :tada:"),
+				fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
 			).Return(nil)
 			githubClient.EXPECT().CreateStatusOfLatestCommit(
 				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateSuccess).Return(nil)

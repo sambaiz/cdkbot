@@ -49,12 +49,18 @@ func (e *EventHandler) pullRequestOpened(
 	if err != nil {
 		return err
 	}
+	target, ok := cfg.Targets[hook.GetPullRequest().GetBase().GetLabel()]
+	if !ok {
+		// noop
+		return nil
+	}
+
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 
 	if err := e.cdk.Setup(cdkPath); err != nil {
 		return err
 	}
-	diff, hasDiff := e.cdk.Diff(cdkPath)
+	diff, hasDiff := e.cdk.Diff(cdkPath, "", target.Contexts)
 	message := ""
 	if !hasDiff {
 		message = "\nNo stacks are updated"

@@ -10,9 +10,9 @@ import (
 // Clienter is interface of CDK client
 type Clienter interface {
 	Setup(repoPath string) error
-	List(repoPath string) ([]string, error)
-	Diff(repoPath string) (string, bool)
-	Deploy(repoPath string, stacks string) (string, error)
+	List(repoPath string, contexts map[string]string) ([]string, error)
+	Diff(repoPath string, stacks string, contexts map[string]string) (string, bool)
+	Deploy(repoPath string, stacks string, contexts map[string]string) (string, error)
 }
 
 // Client is CDK client
@@ -38,8 +38,12 @@ func (*Client) Setup(repoPath string) error {
 }
 
 // List stack
-func (*Client) List(repoPath string) ([]string, error) {
-	cmd := exec.Command("npm", "run", "cdk", "--", "list")
+func (*Client) List(repoPath string, contexts map[string]string) ([]string, error) {
+	args := []string{"run", "cdk", "--", "list", "-c"}
+	for k, v := range contexts {
+		args = append(args, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
 	out, err := cmd.Output()
 	if err != nil {
@@ -50,8 +54,12 @@ func (*Client) List(repoPath string) ([]string, error) {
 }
 
 // Diff stack and returns (diff, hasDiff)
-func (*Client) Diff(repoPath string) (string, bool) {
-	cmd := exec.Command("npm", "run", "cdk", "--", "diff")
+func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) (string, bool) {
+	args := []string{"run", "cdk", "--", "diff", stacks, "-c"}
+	for k, v := range contexts {
+		args = append(args, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()
 	lines := []string{}
@@ -65,8 +73,12 @@ func (*Client) Diff(repoPath string) (string, bool) {
 }
 
 // Deploy stack
-func (*Client) Deploy(repoPath string, stacks string) (string, error) {
-	cmd := exec.Command("npm", "run", "cdk", "--", "deploy", "--require-approval", "never", stacks)
+func (*Client) Deploy(repoPath string, stacks string, contexts map[string]string) (string, error) {
+	args := []string{"run", "cdk", "--", "deploy", "--require-approval", "never", stacks, "-c"}
+	for k, v := range contexts {
+		args = append(args, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
 	out, _ := cmd.CombinedOutput()
 	result := strings.Join(strings.Split(strings.Trim(string(out), "\n"), "\n")[3:], "\n")

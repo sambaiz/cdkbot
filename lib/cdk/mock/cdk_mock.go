@@ -47,46 +47,46 @@ func (mr *MockClienterMockRecorder) Setup(repoPath interface{}) *gomock.Call {
 }
 
 // List mocks base method
-func (m *MockClienter) List(repoPath string) ([]string, error) {
+func (m *MockClienter) List(repoPath string, contexts map[string]string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", repoPath)
+	ret := m.ctrl.Call(m, "List", repoPath, contexts)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List
-func (mr *MockClienterMockRecorder) List(repoPath interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) List(repoPath, contexts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClienter)(nil).List), repoPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClienter)(nil).List), repoPath, contexts)
 }
 
 // Diff mocks base method
-func (m *MockClienter) Diff(repoPath string) (string, bool) {
+func (m *MockClienter) Diff(repoPath, stacks string, contexts map[string]string) (string, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Diff", repoPath)
+	ret := m.ctrl.Call(m, "Diff", repoPath, stacks, contexts)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // Diff indicates an expected call of Diff
-func (mr *MockClienterMockRecorder) Diff(repoPath interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) Diff(repoPath, stacks, contexts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Diff", reflect.TypeOf((*MockClienter)(nil).Diff), repoPath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Diff", reflect.TypeOf((*MockClienter)(nil).Diff), repoPath, stacks, contexts)
 }
 
 // Deploy mocks base method
-func (m *MockClienter) Deploy(repoPath, stacks string) (string, error) {
+func (m *MockClienter) Deploy(repoPath, stacks string, contexts map[string]string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Deploy", repoPath, stacks)
+	ret := m.ctrl.Call(m, "Deploy", repoPath, stacks, contexts)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Deploy indicates an expected call of Deploy
-func (mr *MockClienterMockRecorder) Deploy(repoPath, stacks interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) Deploy(repoPath, stacks, contexts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClienter)(nil).Deploy), repoPath, stacks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClienter)(nil).Deploy), repoPath, stacks, contexts)
 }

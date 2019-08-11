@@ -80,7 +80,8 @@ func (e *EventHandler) issueCommentCreated(
 	if err != nil {
 		return err
 	}
-	if _, ok := cfg.Targets[baseBranch]; !ok {
+	target, ok := cfg.Targets[baseBranch]
+	if !ok {
 		// noop
 		return nil
 	}
@@ -91,9 +92,9 @@ func (e *EventHandler) issueCommentCreated(
 
 	switch cmd.action {
 	case actionDiff:
-		err = e.doActionDiff(ctx, event, cdkPath, cmd.args)
+		err = e.doActionDiff(ctx, event, cdkPath, cmd.args, target.Contexts)
 	case actionDeploy:
-		err = e.doActionDeploy(ctx, event, cdkPath, cmd.args)
+		err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
 	}
 	return err
 }
@@ -135,14 +136,16 @@ func (e *EventHandler) doActionDiff(
 	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
+	contexts map[string]string,
 ) error {
-	diff, hasDiff := e.cdk.Diff(cdkPath)
+	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
+	diff, hasDiff := e.cdk.Diff(cdkPath, args, contexts)
 	if err := e.cli.CreateComment(
 		ctx,
 		event.ownerName,
 		event.repoName,
 		event.issueNumber,
-		fmt.Sprintf("### cdk diff %s\n```%s```", strings.TrimSpace(cmdArgs), diff),
+		fmt.Sprintf("### cdk diff %s\n```%s```", args, diff),
 	); err != nil {
 		return err
 	}
@@ -167,20 +170,21 @@ func (e *EventHandler) doActionDeploy(
 	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
+	contexts map[string]string,
 ) error {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
-		stacks, err := e.cdk.List(cdkPath)
+		stacks, err := e.cdk.List(cdkPath, contexts)
 		if err != nil {
 			return err
 		}
 		args = strings.Join(stacks, " ")
 	}
-	result, err := e.cdk.Deploy(cdkPath, args)
+	result, err := e.cdk.Deploy(cdkPath, args, contexts)
 	if err != nil {
 		return err
 	}
-	_, hasDiff := e.cdk.Diff(cdkPath)
+	_, hasDiff := e.cdk.Diff(cdkPath, "", contexts)
 	message := "All stacks have been deployed :tada:"
 	if hasDiff {
 		message = "To be continued"
@@ -190,7 +194,7 @@ func (e *EventHandler) doActionDeploy(
 		event.ownerName,
 		event.repoName,
 		event.issueNumber,
-		fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, message),
+		fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", args, result, message),
 	); err != nil {
 		return err
 	}
