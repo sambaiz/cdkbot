@@ -17,20 +17,20 @@ type issueCommentEvent struct {
 	cloneURL    string
 }
 
-// IssueComment handles
+// IssueComment handles github.IssueCommentEvent
 func (e *EventHandler) IssueComment(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
+	ev *github.IssueCommentEvent,
 ) error {
 	event := issueCommentEvent{
-		ownerName:   hook.GetRepo().GetOwner().GetLogin(),
-		repoName:    hook.GetRepo().GetName(),
-		issueNumber: hook.GetIssue().GetNumber(),
-		commentBody: hook.GetComment().GetBody(),
-		cloneURL:    hook.GetRepo().GetCloneURL(),
+		ownerName:   ev.GetRepo().GetOwner().GetLogin(),
+		repoName:    ev.GetRepo().GetName(),
+		issueNumber: ev.GetIssue().GetNumber(),
+		commentBody: ev.GetComment().GetBody(),
+		cloneURL:    ev.GetRepo().GetCloneURL(),
 	}
 	var f func() (client.State, error)
-	switch hook.GetAction() {
+	switch ev.GetAction() {
 	case "created":
 		f = func() (client.State, error) {
 			return e.issueCommentCreated(ctx, event)

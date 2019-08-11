@@ -21,6 +21,24 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		isError    bool
 	}{
 		{
+			title: "no targets are matched",
+			in: issueCommentEvent{
+				ownerName:   "owner",
+				repoName:    "repo",
+				issueNumber: 1,
+				commentBody: "/deploy TestStack",
+				cloneURL:    "http://github.com/sambaiz/cdkbot",
+			},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"master": {},
+				},
+			},
+			baseBranch: "develop",
+			out:        client.StateSuccess,
+		},
+		{
 			title: "comment diff and has diff",
 			in: issueCommentEvent{
 				ownerName:   "owner",
@@ -59,24 +77,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 							"env": "stg",
 						},
 					},
-				},
-			},
-			baseBranch: "develop",
-			out:        client.StateSuccess,
-		},
-		{
-			title: "no targets are matched",
-			in: issueCommentEvent{
-				ownerName:   "owner",
-				repoName:    "repo",
-				issueNumber: 1,
-				commentBody: "/deploy TestStack",
-				cloneURL:    "http://github.com/sambaiz/cdkbot",
-			},
-			cfg: config.Config{
-				CDKRoot: ".",
-				Targets: map[string]config.Target{
-					"master": {},
 				},
 			},
 			baseBranch: "develop",
