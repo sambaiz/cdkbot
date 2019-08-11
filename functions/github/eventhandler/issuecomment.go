@@ -9,8 +9,6 @@ import (
 	"github.com/sambaiz/cdkbot/functions/github/client"
 )
 
-const clonePath = "/tmp/repo"
-
 type issueCommentEvent struct {
 	ownerName   string
 	repoName    string

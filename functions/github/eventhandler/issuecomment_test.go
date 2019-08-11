@@ -7,11 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	githubClientMock "github.com/sambaiz/cdkbot/functions/github/client/mock"
-	cdkMock "github.com/sambaiz/cdkbot/lib/cdk/mock"
 	"github.com/sambaiz/cdkbot/lib/config"
-	configMock "github.com/sambaiz/cdkbot/lib/config/mock"
-	gitMock "github.com/sambaiz/cdkbot/lib/git/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,41 +84,35 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		},
 	}
 
-	newEventHandlerWithMock := func(
+	constructEventHandlerWithMock := func(
 		ctx context.Context,
 		ctrl *gomock.Controller,
 		event issueCommentEvent,
 		cfg config.Config,
 		baseBranch string,
 	) *EventHandler {
-		githubClient := githubClientMock.NewMockClienter(ctrl)
-		gliClient := gitMock.NewMockClienter(ctrl)
-		configClient := configMock.NewMockReaderer(ctrl)
-		cdkClient := cdkMock.NewMockClienter(ctrl)
-
-		hash := "hash"
-		githubClient.EXPECT().GetPullRequestLatestCommitHash(
-			ctx, event.ownerName, event.repoName, event.issueNumber).Return(hash, nil)
-		gliClient.EXPECT().Clone(
+		githubClient, gitClient, configClient, cdkClient := constructSetupMocks(
+			ctx,
+			ctrl,
+			event.ownerName,
+			event.repoName,
+			event.issueNumber,
 			event.cloneURL,
-			clonePath,
-			&hash,
-		).Return(nil)
-		configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
-		githubClient.EXPECT().GetPullRequestBaseBranch(ctx, event.ownerName, event.repoName, event.issueNumber).Return(baseBranch, nil)
-		target, ok := cfg.Targets[baseBranch]
-		if !ok {
+			cfg,
+			baseBranch,
+		)
+
+		if _, ok := cfg.Targets[baseBranch]; !ok {
 			return &EventHandler{
 				cli:    githubClient,
-				git:    gliClient,
+				git:    gitClient,
 				config: configClient,
 				cdk:    cdkClient,
 			}
 		}
 
+		target := cfg.Targets[baseBranch]
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-		cdkClient.EXPECT().Setup(cdkPath).Return(nil)
-
 		cmd := parseCommand(event.commentBody)
 		if cmd.action == actionDiff {
 			// doActionDiff()
@@ -151,7 +141,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 
 		return &EventHandler{
 			cli:    githubClient,
-			git:    gliClient,
+			git:    gitClient,
 			config: configClient,
 			cdk:    cdkClient,
 		}
@@ -162,7 +152,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			eventHandler := newEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
+			eventHandler := constructEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
 			state, err := eventHandler.issueCommentCreated(ctx, test.in)
 			assert.Equal(t, test.isError, err != nil)
 			assert.Equal(t, test.out, state)

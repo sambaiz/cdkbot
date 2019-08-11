@@ -60,6 +60,8 @@ func (e *EventHandler) updateStatus(
 	return nil
 }
 
+const clonePath = "/tmp/repo"
+
 func (e *EventHandler) setup(
 	ctx context.Context,
 	ownerName string,
