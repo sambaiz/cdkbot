@@ -31,72 +31,63 @@ func (e *EventHandler) IssueComment(
 		commentBody: hook.GetComment().GetBody(),
 		cloneURL:    hook.GetRepo().GetCloneURL(),
 	}
-	if hook.GetAction() == "created" {
-		return e.issueCommentCreated(ctx, event)
+	var f func() (client.State, error)
+	switch hook.GetAction() {
+	case "created":
+		f = func() (client.State, error) {
+			return e.issueCommentCreated(ctx, event)
+		}
+	default:
+		return nil
 	}
-	return nil
+	return e.updateStatus(
+		ctx,
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		f,
+	)
 }
 
 func (e *EventHandler) issueCommentCreated(
 	ctx context.Context,
 	event issueCommentEvent,
-) error {
+) (client.State, error) {
 	cmd := parseCommand(event.commentBody)
 	if cmd == nil {
-		return nil
+		return client.StateSuccess, nil
 	}
-	if err := e.cli.CreateStatusOfLatestCommit(
+	cdkPath, _, target, err := e.setup(
 		ctx,
 		event.ownerName,
 		event.repoName,
 		event.issueNumber,
-		client.StatePending,
-	); err != nil {
-		return err
-	}
-	hash, err := e.cli.GetPullRequestLatestCommitHash(
-		ctx,
-		event.ownerName,
-		event.repoName,
-		event.issueNumber,
+		event.cloneURL,
 	)
 	if err != nil {
-		return err
+		return client.StateError, err
 	}
-	if err := e.git.Clone(event.cloneURL, clonePath, &hash); err != nil {
-		return err
+	if target == nil {
+		return client.StateSuccess, err
 	}
-	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
-	if err != nil {
-		return err
-	}
-	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-	baseBranch, err := e.cli.GetPullRequestBaseBranch(
-		ctx,
-		event.ownerName,
-		event.repoName,
-		event.issueNumber,
-	)
-	if err != nil {
-		return err
-	}
-	target, ok := cfg.Targets[baseBranch]
-	if !ok {
-		// noop
-		return nil
-	}
-
-	if err := e.cdk.Setup(cdkPath); err != nil {
-		return err
-	}
-
+	var hasDiff bool
 	switch cmd.action {
 	case actionDiff:
-		err = e.doActionDiff(ctx, event, cdkPath, cmd.args, target.Contexts)
+		hasDiff, err = e.doActionDiff(ctx, event, cdkPath, cmd.args, target.Contexts)
 	case actionDeploy:
-		err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
+		hasDiff, err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
+	default:
+		return client.StateSuccess, nil
 	}
-	return err
+	if err != nil {
+		return client.StateError, err
+	}
+	if hasDiff {
+		return client.StateFailure, nil
+	} else {
+		return client.StateSuccess, nil
+	}
+	return client.StateSuccess, nil
 }
 
 type action string
@@ -137,7 +128,7 @@ func (e *EventHandler) doActionDiff(
 	cdkPath string,
 	cmdArgs string,
 	contexts map[string]string,
-) error {
+) (bool, error) {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	diff, hasDiff := e.cdk.Diff(cdkPath, args, contexts)
 	if err := e.cli.CreateComment(
@@ -147,22 +138,9 @@ func (e *EventHandler) doActionDiff(
 		event.issueNumber,
 		fmt.Sprintf("### cdk diff %s\n```%s```", args, diff),
 	); err != nil {
-		return err
+		return false, err
 	}
-	status := client.StateSuccess
-	if hasDiff {
-		status = client.StateFailure
-	}
-	if err := e.cli.CreateStatusOfLatestCommit(
-		ctx,
-		event.ownerName,
-		event.repoName,
-		event.issueNumber,
-		status,
-	); err != nil {
-		return err
-	}
-	return nil
+	return hasDiff, nil
 }
 
 func (e *EventHandler) doActionDeploy(
@@ -171,18 +149,18 @@ func (e *EventHandler) doActionDeploy(
 	cdkPath string,
 	cmdArgs string,
 	contexts map[string]string,
-) error {
+) (bool, error) {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
 		stacks, err := e.cdk.List(cdkPath, contexts)
 		if err != nil {
-			return err
+			return false, err
 		}
 		args = strings.Join(stacks, " ")
 	}
 	result, err := e.cdk.Deploy(cdkPath, args, contexts)
 	if err != nil {
-		return err
+		return false, err
 	}
 	_, hasDiff := e.cdk.Diff(cdkPath, "", contexts)
 	message := "All stacks have been deployed :tada:"
@@ -196,20 +174,7 @@ func (e *EventHandler) doActionDeploy(
 		event.issueNumber,
 		fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", args, result, message),
 	); err != nil {
-		return err
+		return false, err
 	}
-	status := client.StateSuccess
-	if hasDiff {
-		status = client.StateFailure
-	}
-	if err := e.cli.CreateStatusOfLatestCommit(
-		ctx,
-		event.ownerName,
-		event.repoName,
-		event.issueNumber,
-		status,
-	); err != nil {
-		return err
-	}
-	return nil
+	return hasDiff, nil
 }

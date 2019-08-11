@@ -2,6 +2,7 @@ package eventhandler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sambaiz/cdkbot/functions/github/client"
 	"github.com/sambaiz/cdkbot/lib/cdk"
@@ -25,4 +26,80 @@ func New(ctx context.Context) *EventHandler {
 		config: new(config.Reader),
 		cdk:    new(cdk.Client),
 	}
+}
+
+func (e *EventHandler) updateStatus(
+	ctx context.Context,
+	ownerName string,
+	repoName string,
+	issueNumber int,
+	f func() (client.State, error),
+) error {
+	if err := e.cli.CreateStatusOfLatestCommit(
+		ctx,
+		ownerName,
+		repoName,
+		issueNumber,
+		client.StatePending,
+	); err != nil {
+		return err
+	}
+	state, err := f()
+	defer func() {
+		e.cli.CreateStatusOfLatestCommit(
+			ctx,
+			ownerName,
+			repoName,
+			issueNumber,
+			state,
+		)
+	}()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *EventHandler) setup(
+	ctx context.Context,
+	ownerName string,
+	repoName string,
+	issueNumber int,
+	cloneURL string,
+) (string, *config.Config, *config.Target, error) {
+	hash, err := e.cli.GetPullRequestLatestCommitHash(
+		ctx,
+		ownerName,
+		repoName,
+		issueNumber,
+	)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	if err := e.git.Clone(cloneURL, clonePath, &hash); err != nil {
+		return "", nil, nil, err
+	}
+
+	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
+	if err != nil {
+		return "", nil, nil, err
+	}
+	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
+	baseBranch, err := e.cli.GetPullRequestBaseBranch(
+		ctx,
+		ownerName,
+		repoName,
+		issueNumber,
+	)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	target, ok := cfg.Targets[baseBranch]
+	if !ok {
+		return cdkPath, cfg, nil, nil
+	}
+	if err := e.cdk.Setup(cdkPath); err != nil {
+		return "", nil, nil, err
+	}
+	return cdkPath, cfg, &target, nil
 }

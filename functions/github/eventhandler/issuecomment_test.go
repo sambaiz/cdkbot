@@ -21,6 +21,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		in         issueCommentEvent
 		cfg        config.Config
 		baseBranch string
+		out        client.State
 		isError    bool
 	}{
 		{
@@ -43,7 +44,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				},
 			},
 			baseBranch: "develop",
-			isError:    false,
+			out:        client.StateFailure,
 		},
 		{
 			title: "comment deploy and success",
@@ -65,7 +66,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				},
 			},
 			baseBranch: "develop",
-			isError:    false,
+			out:        client.StateSuccess,
 		},
 		{
 			title: "no targets are matched",
@@ -79,15 +80,11 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
-					"master": {
-						Contexts: map[string]string{
-							"env": "prd",
-						},
-					},
+					"master": {},
 				},
 			},
 			baseBranch: "develop",
-			isError:    false,
+			out:        client.StateSuccess,
 		},
 	}
 
@@ -104,8 +101,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		cdkClient := cdkMock.NewMockClienter(ctrl)
 
 		hash := "hash"
-		githubClient.EXPECT().CreateStatusOfLatestCommit(
-			ctx, event.ownerName, event.repoName, event.issueNumber, client.StatePending).Return(nil)
 		githubClient.EXPECT().GetPullRequestLatestCommitHash(
 			ctx, event.ownerName, event.repoName, event.issueNumber).Return(hash, nil)
 		gliClient.EXPECT().Clone(
@@ -140,8 +135,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				event.issueNumber,
 				fmt.Sprintf("### cdk diff %s\n```%s```", cmd.args, result),
 			).Return(nil)
-			githubClient.EXPECT().CreateStatusOfLatestCommit(
-				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateFailure).Return(nil)
 		} else if cmd.action == actionDeploy {
 			// doActionDeploy()
 			result := "result"
@@ -154,8 +147,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				event.issueNumber,
 				fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
 			).Return(nil)
-			githubClient.EXPECT().CreateStatusOfLatestCommit(
-				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateSuccess).Return(nil)
 		}
 
 		return &EventHandler{
@@ -172,7 +163,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			eventHandler := newEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
-			assert.Equal(t, test.isError, eventHandler.issueCommentCreated(ctx, test.in) != nil)
+			state, err := eventHandler.issueCommentCreated(ctx, test.in)
+			assert.Equal(t, test.isError, err != nil)
+			assert.Equal(t, test.out, state)
 		})
 	}
 }

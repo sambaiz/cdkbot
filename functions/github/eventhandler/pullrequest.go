@@ -32,33 +32,15 @@ func (e *EventHandler) pullRequestOpened(
 	); err != nil {
 		return err
 	}
-
-	hash, err := e.cli.GetPullRequestLatestCommitHash(
+	cdkPath, _, target, err := e.setup(
 		ctx,
 		hook.GetRepo().GetOwner().GetLogin(),
 		hook.GetRepo().GetName(),
 		hook.GetPullRequest().GetNumber(),
+		hook.GetRepo().GetCloneURL(),
 	)
 	if err != nil {
-		return err
-	}
-	if err := e.git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
-		return err
-	}
-	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
-	if err != nil {
-		return err
-	}
-	target, ok := cfg.Targets[hook.GetPullRequest().GetBase().GetLabel()]
-	if !ok {
-		// noop
 		return nil
-	}
-
-	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-
-	if err := e.cdk.Setup(cdkPath); err != nil {
-		return err
 	}
 	diff, hasDiff := e.cdk.Diff(cdkPath, "", target.Contexts)
 	message := ""

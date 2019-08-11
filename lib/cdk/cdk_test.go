@@ -18,13 +18,13 @@ func TestClientList(t *testing.T) {
 }
 
 func TestClientDiff(t *testing.T) {
-	result, hasDiff := new(Client).Diff("./test_repository", "stack1 stack2", map[string]string{"env": "stg", "foo": "bar"})
+	result, hasDiff := new(Client).Diff("./test_repository", "stack1 stack2", map[string]string{"env": "stg"})
 	assert.True(t, hasDiff)
-	assert.Equal(t, "diff: diff stack1 stack2 -c env=stg foo=bar", result)
+	assert.Equal(t, "diff: diff stack1 stack2 -c env=stg", result)
 }
 
 func TestClientDeploy(t *testing.T) {
-	result, err := new(Client).Deploy("./test_repository", "stack1 stack2", map[string]string{"env": "stg", "foo": "bar"})
+	result, err := new(Client).Deploy("./test_repository", "stack1 stack2", map[string]string{"env": "stg"})
 	assert.Nil(t, err)
-	assert.Equal(t, "deploy: deploy --require-approval never stack1 stack2 -c env=stg foo=bar", result)
+	assert.Equal(t, "deploy: deploy --require-approval never stack1 stack2 -c env=stg", result)
 }
