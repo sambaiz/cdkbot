@@ -11,44 +11,59 @@ import (
 
 const clonePath = "/tmp/repo"
 
-// IssueComment handles github.IssueCommentEvent
+type issueCommentEvent struct {
+	ownerName   string
+	repoName    string
+	issueNumber int
+	commentBody string
+	cloneURL    string
+}
+
+// IssueComment handles
 func (e *EventHandler) IssueComment(
 	ctx context.Context,
 	hook *github.IssueCommentEvent,
 ) error {
+	event := issueCommentEvent{
+		ownerName:   hook.GetRepo().GetOwner().GetLogin(),
+		repoName:    hook.GetRepo().GetName(),
+		issueNumber: hook.GetIssue().GetNumber(),
+		commentBody: hook.GetComment().GetBody(),
+		cloneURL:    hook.GetRepo().GetCloneURL(),
+	}
 	if hook.GetAction() == "created" {
-		return e.issueCreated(ctx, hook)
+		return e.issueCommentCreated(ctx, event)
 	}
 	return nil
 }
 
-func (e *EventHandler) issueCreated(
+func (e *EventHandler) issueCommentCreated(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
+	event issueCommentEvent,
 ) error {
-	cmd := parseCommand(hook.GetComment().GetBody())
+	cmd := parseCommand(event.commentBody)
 	if cmd == nil {
 		return nil
 	}
 	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 		client.StatePending,
 	); err != nil {
 		return err
 	}
 	hash, err := e.cli.GetPullRequestLatestCommitHash(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 	)
 	if err != nil {
 		return err
 	}
-	if err := e.git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
+	if err := e.git.Clone(event.cloneURL, clonePath, &hash); err != nil {
 		return err
 	}
 	cfg, err := e.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
@@ -56,6 +71,19 @@ func (e *EventHandler) issueCreated(
 		return err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
+	baseBranch, err := e.cli.GetPullRequestBaseBranch(
+		ctx,
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+	)
+	if err != nil {
+		return err
+	}
+	if _, ok := cfg.Targets[baseBranch]; !ok {
+		// noop
+		return nil
+	}
 
 	if err := e.cdk.Setup(cdkPath); err != nil {
 		return err
@@ -63,9 +91,9 @@ func (e *EventHandler) issueCreated(
 
 	switch cmd.action {
 	case actionDiff:
-		err = e.doActionDiff(ctx, hook, cdkPath, cmd.args)
+		err = e.doActionDiff(ctx, event, cdkPath, cmd.args)
 	case actionDeploy:
-		err = e.doActionDeploy(ctx, hook, cdkPath, cmd.args)
+		err = e.doActionDeploy(ctx, event, cdkPath, cmd.args)
 	}
 	return err
 }
@@ -104,16 +132,16 @@ func parseCommand(cmd string) *command {
 
 func (e *EventHandler) doActionDiff(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
+	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
 ) error {
 	diff, hasDiff := e.cdk.Diff(cdkPath)
 	if err := e.cli.CreateComment(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 		fmt.Sprintf("### cdk diff %s\n```%s```", strings.TrimSpace(cmdArgs), diff),
 	); err != nil {
 		return err
@@ -124,9 +152,9 @@ func (e *EventHandler) doActionDiff(
 	}
 	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 		status,
 	); err != nil {
 		return err
@@ -136,7 +164,7 @@ func (e *EventHandler) doActionDiff(
 
 func (e *EventHandler) doActionDeploy(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
+	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
 ) error {
@@ -159,9 +187,9 @@ func (e *EventHandler) doActionDeploy(
 	}
 	if err := e.cli.CreateComment(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 		fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, message),
 	); err != nil {
 		return err
@@ -172,9 +200,9 @@ func (e *EventHandler) doActionDeploy(
 	}
 	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
 		status,
 	); err != nil {
 		return err

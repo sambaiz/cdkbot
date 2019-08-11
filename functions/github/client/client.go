@@ -30,6 +30,12 @@ type Clienter interface {
 		repo string,
 		number int,
 	) (string, error)
+	GetPullRequestBaseBranch(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+	) (string, error)
 }
 
 // Client is struct of GitHub Client

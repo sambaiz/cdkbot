@@ -76,3 +76,18 @@ func (mr *MockClienterMockRecorder) GetPullRequestLatestCommitHash(ctx, owner, r
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLatestCommitHash", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLatestCommitHash), ctx, owner, repo, number)
 }
+
+// GetPullRequestBaseBranch mocks base method
+func (m *MockClienter) GetPullRequestBaseBranch(ctx context.Context, owner, repo string, number int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPullRequestBaseBranch", ctx, owner, repo, number)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPullRequestBaseBranch indicates an expected call of GetPullRequestBaseBranch
+func (mr *MockClienterMockRecorder) GetPullRequestBaseBranch(ctx, owner, repo, number interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestBaseBranch", reflect.TypeOf((*MockClienter)(nil).GetPullRequestBaseBranch), ctx, owner, repo, number)
+}

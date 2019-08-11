@@ -45,11 +45,11 @@ func handler(req events.APIGatewayProxyRequest) (response, error) {
 		}, nil
 	}
 
-	switch hook := hook.(type) {
+	switch ev := hook.(type) {
 	case *github.PullRequestEvent:
-		err = eventhandler.New(ctx).PullRequest(ctx, hook)
+		err = eventhandler.New(ctx).PullRequest(ctx, ev)
 	case *github.IssueCommentEvent:
-		err = eventhandler.New(ctx).IssueComment(ctx, hook)
+		err = eventhandler.New(ctx).IssueComment(ctx, ev)
 	}
 	if err != nil {
 		logger.Error("Failed to event an event", zap.Error(err))

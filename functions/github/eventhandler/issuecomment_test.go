@@ -2,13 +2,10 @@ package eventhandler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
 	githubClientMock "github.com/sambaiz/cdkbot/functions/github/client/mock"
 	cdkMock "github.com/sambaiz/cdkbot/lib/cdk/mock"
@@ -18,136 +15,167 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEventHandlerIssueComment(t *testing.T) {
-	t.Run("comment diff and has diff", func(t *testing.T) {
-		buf, err := ioutil.ReadFile("./test_event/issuecomment_created_deploy.json")
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		var hook *github.IssueCommentEvent
-		if err := json.Unmarshal(buf, &hook); err != nil {
-			t.Error(err)
-			return
-		}
-		hook.Comment.Body = &[]string{"/diff"}[0]
+func TestEventHandlerIssueCommentCreated(t *testing.T) {
+	tests := []struct {
+		title      string
+		in         issueCommentEvent
+		cfg        config.Config
+		baseBranch string
+		isError    bool
+	}{
+		{
+			title: "comment diff and has diff",
+			in: issueCommentEvent{
+				ownerName:   "owner",
+				repoName:    "repo",
+				issueNumber: 1,
+				commentBody: "/diff",
+				cloneURL:    "http://github.com/sambaiz/cdkbot",
+			},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch: "develop",
+			isError:    false,
+		},
+		{
+			title: "comment deploy and success",
+			in: issueCommentEvent{
+				ownerName:   "owner",
+				repoName:    "repo",
+				issueNumber: 1,
+				commentBody: "/deploy TestStack",
+				cloneURL:    "http://github.com/sambaiz/cdkbot",
+			},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch: "develop",
+			isError:    false,
+		},
+		{
+			title: "no targets are matched",
+			in: issueCommentEvent{
+				ownerName:   "owner",
+				repoName:    "repo",
+				issueNumber: 1,
+				commentBody: "/deploy TestStack",
+				cloneURL:    "http://github.com/sambaiz/cdkbot",
+			},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"master": {
+						Contexts: map[string]string{
+							"env": "prd",
+						},
+					},
+				},
+			},
+			baseBranch: "develop",
+			isError:    false,
+		},
+	}
 
-		ctx := context.Background()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
+	newEventHandlerWithMock := func(
+		ctx context.Context,
+		ctrl *gomock.Controller,
+		event issueCommentEvent,
+		cfg config.Config,
+		baseBranch string,
+	) *EventHandler {
 		githubClient := githubClientMock.NewMockClienter(ctrl)
 		gliClient := gitMock.NewMockClienter(ctrl)
 		configClient := configMock.NewMockReaderer(ctrl)
 		cdkClient := cdkMock.NewMockClienter(ctrl)
 
 		hash := "hash"
-		repoOwnerName := hook.GetRepo().GetOwner().GetLogin()
-		repoName := hook.GetRepo().GetName()
-		issueNumber := hook.GetIssue().GetNumber()
 		githubClient.EXPECT().CreateStatusOfLatestCommit(
-			ctx, repoOwnerName, repoName, issueNumber, client.StatePending).Return(nil)
+			ctx, event.ownerName, event.repoName, event.issueNumber, client.StatePending).Return(nil)
 		githubClient.EXPECT().GetPullRequestLatestCommitHash(
-			ctx, repoOwnerName, repoName, issueNumber).Return(hash, nil)
+			ctx, event.ownerName, event.repoName, event.issueNumber).Return(hash, nil)
 		gliClient.EXPECT().Clone(
-			"https://github.com/test-user/test-repo.git",
+			event.cloneURL,
 			clonePath,
 			&hash,
 		).Return(nil)
-		cfg := &config.Config{
-			CDKRoot: ".",
+		configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
+		githubClient.EXPECT().GetPullRequestBaseBranch(ctx, event.ownerName, event.repoName, event.issueNumber).Return(baseBranch, nil)
+		if _, ok := cfg.Targets[baseBranch]; !ok {
+			return &EventHandler{
+				cli:    githubClient,
+				git:    gliClient,
+				config: configClient,
+				cdk:    cdkClient,
+			}
 		}
-		configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(cfg, nil)
+
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		cdkClient.EXPECT().Setup(cdkPath).Return(nil)
 
-		// doActionDiff()
-		result := "result"
-		args := ""
-		cdkClient.EXPECT().Diff(cdkPath).Return(result, true)
-		githubClient.EXPECT().CreateComment(
-			ctx,
-			repoOwnerName,
-			repoName,
-			issueNumber,
-			fmt.Sprintf("### cdk diff %s\n```%s```", args, result),
-		).Return(nil)
-		githubClient.EXPECT().CreateStatusOfLatestCommit(
-			ctx, repoOwnerName, repoName, issueNumber, client.StateFailure).Return(nil)
+		cmd := parseCommand(event.commentBody)
+		if cmd.action == actionDiff {
+			// doActionDiff()
+			result := "result"
+			args := ""
+			cdkClient.EXPECT().Diff(cdkPath).Return(result, true)
+			githubClient.EXPECT().CreateComment(
+				ctx,
+				event.ownerName,
+				event.repoName,
+				event.issueNumber,
+				fmt.Sprintf("### cdk diff %s\n```%s```", args, result),
+			).Return(nil)
+			githubClient.EXPECT().CreateStatusOfLatestCommit(
+				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateFailure).Return(nil)
+		} else if cmd.action == actionDeploy {
+			// doActionDeploy()
+			result := "result"
+			args := "TestStack"
+			cdkClient.EXPECT().Deploy(cdkPath, args).Return(result, nil)
+			cdkClient.EXPECT().Diff(cdkPath).Return("", false)
+			githubClient.EXPECT().CreateComment(
+				ctx,
+				event.ownerName,
+				event.repoName,
+				event.issueNumber,
+				fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, "All stacks have been deployed :tada:"),
+			).Return(nil)
+			githubClient.EXPECT().CreateStatusOfLatestCommit(
+				ctx, event.ownerName, event.repoName, event.issueNumber, client.StateSuccess).Return(nil)
+		}
 
-		eventHandler := &EventHandler{
+		return &EventHandler{
 			cli:    githubClient,
 			git:    gliClient,
 			config: configClient,
 			cdk:    cdkClient,
 		}
-		assert.Nil(t, eventHandler.IssueComment(ctx, hook))
-	})
+	}
 
-	t.Run("comment deploy TestStack and success", func(t *testing.T) {
-		buf, err := ioutil.ReadFile("./test_event/issuecomment_created_deploy.json")
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		var hook *github.IssueCommentEvent
-		if err := json.Unmarshal(buf, &hook); err != nil {
-			t.Error(err)
-			return
-		}
-
-		ctx := context.Background()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		githubClient := githubClientMock.NewMockClienter(ctrl)
-		gliClient := gitMock.NewMockClienter(ctrl)
-		configClient := configMock.NewMockReaderer(ctrl)
-		cdkClient := cdkMock.NewMockClienter(ctrl)
-
-		hash := "hash"
-		repoOwnerName := hook.GetRepo().GetOwner().GetLogin()
-		repoName := hook.GetRepo().GetName()
-		issueNumber := hook.GetIssue().GetNumber()
-		githubClient.EXPECT().CreateStatusOfLatestCommit(
-			ctx, repoOwnerName, repoName, issueNumber, client.StatePending).Return(nil)
-		githubClient.EXPECT().GetPullRequestLatestCommitHash(
-			ctx, repoOwnerName, repoName, issueNumber).Return(hash, nil)
-		gliClient.EXPECT().Clone(
-			"https://github.com/test-user/test-repo.git",
-			clonePath,
-			&hash,
-		).Return(nil)
-		cfg := &config.Config{
-			CDKRoot: ".",
-		}
-		configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(cfg, nil)
-		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-		cdkClient.EXPECT().Setup(cdkPath).Return(nil)
-
-		// doActionDeploy()
-		result := "result"
-		args := "TestStack"
-		cdkClient.EXPECT().Deploy(cdkPath, args).Return(result, nil)
-		cdkClient.EXPECT().Diff(cdkPath).Return("", false)
-		githubClient.EXPECT().CreateComment(
-			ctx,
-			repoOwnerName,
-			repoName,
-			issueNumber,
-			fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, "All stacks have been deployed :tada:"),
-		).Return(nil)
-		githubClient.EXPECT().CreateStatusOfLatestCommit(
-			ctx, repoOwnerName, repoName, issueNumber, client.StateSuccess).Return(nil)
-
-		eventHandler := &EventHandler{
-			cli:    githubClient,
-			git:    gliClient,
-			config: configClient,
-			cdk:    cdkClient,
-		}
-		assert.Nil(t, eventHandler.IssueComment(ctx, hook))
-	})
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			eventHandler := newEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
+			assert.Equal(t, test.isError, eventHandler.issueCommentCreated(ctx, test.in) != nil)
+		})
+	}
 }
 
 func TestParseCommand(t *testing.T) {
