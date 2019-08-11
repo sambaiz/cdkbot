@@ -6,27 +6,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRead(t *testing.T) {
+func TestReaderRead(t *testing.T) {
 	tests := []struct {
-		title    string
-		path     string
-		expected *Config
-		isError  bool
+		title   string
+		in      string
+		out     *Config
+		isError bool
 	}{
 		{
 			title: "success",
-			path:  "./test/cdkbot.yml",
-			expected: &Config{
+			in:    "./test_config/cdkbot.yml",
+			out: &Config{
 				CDKRoot: ".",
-				Targets: []Target{
-					{
-						Branch: "develop",
+				Targets: map[string]Target{
+					"develop": {
 						Contexts: map[string]string{
 							"env": "stg",
 						},
 					},
-					{
-						Branch: "master",
+					"master": {
 						Contexts: map[string]string{
 							"env": "prd",
 						},
@@ -36,24 +34,24 @@ func TestRead(t *testing.T) {
 		},
 		{
 			title:   "file is not found",
-			path:    "./test/notfound.yml",
+			in:      "./test_config/notfound.yml",
 			isError: true,
 		},
 		{
 			title:   "invalid yaml",
-			path:    "./test/invalid_yaml.yml",
+			in:      "./test_config/invalid_yaml.yml",
 			isError: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
-			config, err := Read(test.path)
+			config, err := new(Reader).Read(test.in)
 			if test.isError {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
 			}
-			assert.Equal(t, test.expected, config)
+			assert.Equal(t, test.out, config)
 		})
 	}
 }

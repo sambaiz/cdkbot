@@ -22,6 +22,8 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 			StatusCode: http.StatusInternalServerError,
 		}, err
 	}
+
+	// GitHub webhoook times out in 10 seconds so invoke a new function as event.
 	input := &sdk.InvokeInput{
 		FunctionName:   aws.String(os.Getenv("INVOKE_FUNTION_ARN")),
 		Payload:        payload,

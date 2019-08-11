@@ -6,85 +6,71 @@ import (
 
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	"github.com/sambaiz/cdkbot/lib/cdk"
-	"github.com/sambaiz/cdkbot/lib/config"
-	"github.com/sambaiz/cdkbot/lib/git"
 )
 
-// PullRequest handles github.PullRequestEvent
-func PullRequest(
-	ctx context.Context,
-	hook *github.PullRequestEvent,
-	cli client.Clienter,
-) error {
-	if hook.GetAction() == "opened" {
-		return pullRequestOpened(ctx, hook, cli)
-	}
-	return nil
+type pullRequestEvent struct {
+	ownerName string
+	repoName  string
+	prNumber  int
+	cloneURL  string
 }
 
-func pullRequestOpened(
+// PullRequest handles github.PullRequestEvent
+func (e *EventHandler) PullRequest(
 	ctx context.Context,
-	hook *github.PullRequestEvent,
-	cli client.Clienter,
+	ev *github.PullRequestEvent,
 ) error {
-	if err := cli.CreateStatusOfLatestCommit(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-		client.StatePending,
-	); err != nil {
-		return err
+	event := pullRequestEvent{
+		ownerName: ev.GetRepo().GetOwner().GetLogin(),
+		repoName:  ev.GetRepo().GetName(),
+		prNumber:  ev.GetPullRequest().GetNumber(),
+		cloneURL:  ev.GetRepo().GetCloneURL(),
 	}
-
-	hash, err := cli.GetPullRequestLatestCommitHash(
+	var f func() (client.State, error)
+	switch ev.GetAction() {
+	case "opened":
+		f = func() (client.State, error) {
+			return e.pullRequestOpened(ctx, event)
+		}
+	default:
+		return nil
+	}
+	return e.updateStatus(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.prNumber,
+		f,
 	)
-	if err != nil {
-		return err
-	}
-	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
-		return err
-	}
-	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
-	if err != nil {
-		return err
-	}
-	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
+}
 
-	if err := cdk.Setup(cdkPath); err != nil {
-		return err
+func (e *EventHandler) pullRequestOpened(
+	ctx context.Context,
+	event pullRequestEvent,
+) (client.State, error) {
+	cdkPath, _, target, err := e.setup(ctx, event.ownerName, event.repoName, event.prNumber, event.cloneURL)
+	if err != nil {
+		return client.StateError, err
 	}
-	diff, hasDiff := cdk.Diff(cdkPath)
+	if target == nil {
+		return client.StateSuccess, err
+	}
+	diff, hasDiff := e.cdk.Diff(cdkPath, "", target.Contexts)
 	message := ""
 	if !hasDiff {
 		message = "\nNo stacks are updated"
 	}
-	if err := cli.CreateComment(
+	if err := e.cli.CreateComment(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.prNumber,
 		fmt.Sprintf("### cdk diff\n```%s```\n%s", diff, message),
 	); err != nil {
-		return err
+		return client.StateError, err
 	}
-	status := client.StateSuccess
 	if hasDiff {
-		status = client.StateFailure
+		return client.StateFailure, nil
 	}
-	if err := cli.CreateStatusOfLatestCommit(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetPullRequest().GetNumber(),
-		status,
-	); err != nil {
-		return err
-	}
-	return nil
+	return client.StateSuccess, nil
 }

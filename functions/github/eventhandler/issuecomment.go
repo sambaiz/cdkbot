@@ -7,72 +7,83 @@ import (
 
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/github/client"
-	"github.com/sambaiz/cdkbot/lib/cdk"
-	"github.com/sambaiz/cdkbot/lib/config"
-	"github.com/sambaiz/cdkbot/lib/git"
 )
 
-const clonePath = "/tmp/repo"
-
-// IssueComment handles github.IssueCommentEvent
-func IssueComment(
-	ctx context.Context,
-	hook *github.IssueCommentEvent,
-	cli client.Clienter,
-) error {
-	if hook.GetAction() == "created" {
-		return issueCreated(ctx, hook, cli)
-	}
-	return nil
+type issueCommentEvent struct {
+	ownerName   string
+	repoName    string
+	issueNumber int
+	commentBody string
+	cloneURL    string
 }
 
-func issueCreated(
+// IssueComment handles github.IssueCommentEvent
+func (e *EventHandler) IssueComment(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
-	cli client.Clienter,
+	ev *github.IssueCommentEvent,
 ) error {
-	cmd := parseCommand(hook.GetComment().GetBody())
-	if cmd == nil {
+	event := issueCommentEvent{
+		ownerName:   ev.GetRepo().GetOwner().GetLogin(),
+		repoName:    ev.GetRepo().GetName(),
+		issueNumber: ev.GetIssue().GetNumber(),
+		commentBody: ev.GetComment().GetBody(),
+		cloneURL:    ev.GetRepo().GetCloneURL(),
+	}
+	var f func() (client.State, error)
+	switch ev.GetAction() {
+	case "created":
+		f = func() (client.State, error) {
+			return e.issueCommentCreated(ctx, event)
+		}
+	default:
 		return nil
 	}
-	if err := cli.CreateStatusOfLatestCommit(
+	return e.updateStatus(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
-		client.StatePending,
-	); err != nil {
-		return err
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		f,
+	)
+}
+
+func (e *EventHandler) issueCommentCreated(
+	ctx context.Context,
+	event issueCommentEvent,
+) (client.State, error) {
+	cmd := parseCommand(event.commentBody)
+	if cmd == nil {
+		return client.StateSuccess, nil
 	}
-	hash, err := cli.GetPullRequestLatestCommitHash(
+	cdkPath, _, target, err := e.setup(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		event.cloneURL,
 	)
 	if err != nil {
-		return err
+		return client.StateError, err
 	}
-	if err := git.Clone(hook.GetRepo().GetCloneURL(), clonePath, &hash); err != nil {
-		return err
+	if target == nil {
+		return client.StateSuccess, err
 	}
-	cfg, err := config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
-	if err != nil {
-		return err
-	}
-	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-
-	if err := cdk.Setup(cdkPath); err != nil {
-		return err
-	}
-
+	var hasDiff bool
 	switch cmd.action {
 	case actionDiff:
-		err = doActionDiff(ctx, hook, cli, cdkPath, cmd.args)
+		hasDiff, err = e.doActionDiff(ctx, event, cdkPath, cmd.args, target.Contexts)
 	case actionDeploy:
-		err = doActionDeploy(ctx, hook, cli, cdkPath, cmd.args)
+		hasDiff, err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
+	default:
+		return client.StateSuccess, nil
 	}
-	return err
+	if err != nil {
+		return client.StateError, err
+	}
+	if hasDiff {
+		return client.StateFailure, nil
+	}
+	return client.StateSuccess, nil
 }
 
 type action string
@@ -87,11 +98,11 @@ type command struct {
 	args   string
 }
 
-func parseCommand(comment string) *command {
-	if !strings.HasPrefix(comment, "/") {
+func parseCommand(cmd string) *command {
+	if !strings.HasPrefix(cmd, "/") {
 		return nil
 	}
-	parts := strings.Split(comment, " ")
+	parts := strings.Split(cmd, " ")
 	switch parts[0] {
 	case "/deploy":
 		return &command{
@@ -107,71 +118,59 @@ func parseCommand(comment string) *command {
 	return nil
 }
 
-func doActionDiff(
+func (e *EventHandler) doActionDiff(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
-	cli client.Clienter,
+	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
-) error {
-	diff, _ := cdk.Diff(cdkPath)
-	if err := cli.CreateComment(
+	contexts map[string]string,
+) (bool, error) {
+	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
+	diff, hasDiff := e.cdk.Diff(cdkPath, args, contexts)
+	if err := e.cli.CreateComment(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
-		fmt.Sprintf("### cdk diff %s\n```%s```", strings.TrimSpace(cmdArgs), diff),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		fmt.Sprintf("### cdk diff %s\n```%s```", args, diff),
 	); err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return hasDiff, nil
 }
 
-func doActionDeploy(
+func (e *EventHandler) doActionDeploy(
 	ctx context.Context,
-	hook *github.IssueCommentEvent,
-	cli client.Clienter,
+	event issueCommentEvent,
 	cdkPath string,
 	cmdArgs string,
-) error {
+	contexts map[string]string,
+) (bool, error) {
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
-		stacks, err := cdk.List(cdkPath)
+		stacks, err := e.cdk.List(cdkPath, contexts)
 		if err != nil {
-			return err
+			return false, err
 		}
 		args = strings.Join(stacks, " ")
 	}
-	result, err := cdk.Deploy(cdkPath, args)
+	result, err := e.cdk.Deploy(cdkPath, args, contexts)
 	if err != nil {
-		return err
+		return false, err
 	}
-	_, hasDiff := cdk.Diff(cdkPath)
+	_, hasDiff := e.cdk.Diff(cdkPath, "", contexts)
 	message := "All stacks have been deployed :tada:"
 	if hasDiff {
 		message = "To be continued"
 	}
-	if err := cli.CreateComment(
+	if err := e.cli.CreateComment(
 		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
-		fmt.Sprintf("### cdk deploy\n```%s```\n%s", result, message),
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", args, result, message),
 	); err != nil {
-		return err
+		return false, err
 	}
-	status := client.StateSuccess
-	if hasDiff {
-		status = client.StateFailure
-	}
-	if err := cli.CreateStatusOfLatestCommit(
-		ctx,
-		hook.GetRepo().GetOwner().GetLogin(),
-		hook.GetRepo().GetName(),
-		hook.GetIssue().GetNumber(),
-		status,
-	); err != nil {
-		return err
-	}
-	return nil
+	return hasDiff, nil
 }

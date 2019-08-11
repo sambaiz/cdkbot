@@ -9,8 +9,16 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
+// Clienter is interface of git client
+type Clienter interface {
+	Clone(url, path string, hash *string) error
+}
+
+// Client is git client
+type Client struct{}
+
 // Clone a git repository
-func Clone(url, path string, hash *string) error {
+func (*Client) Clone(url, path string, hash *string) error {
 	if err := exec.Command("rm", "-rf", path).Run(); err != nil {
 		return err
 	}

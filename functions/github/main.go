@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/go-github/v26/github"
-	"github.com/sambaiz/cdkbot/functions/github/client"
 	"github.com/sambaiz/cdkbot/functions/github/eventhandler"
 	"go.uber.org/zap"
 )
@@ -46,12 +45,11 @@ func handler(req events.APIGatewayProxyRequest) (response, error) {
 		}, nil
 	}
 
-	cli := client.New(ctx)
-	switch hook := hook.(type) {
+	switch ev := hook.(type) {
 	case *github.PullRequestEvent:
-		err = eventhandler.PullRequest(ctx, hook, cli)
+		err = eventhandler.New(ctx).PullRequest(ctx, ev)
 	case *github.IssueCommentEvent:
-		err = eventhandler.IssueComment(ctx, hook, cli)
+		err = eventhandler.New(ctx).IssueComment(ctx, ev)
 	}
 	if err != nil {
 		logger.Error("Failed to event an event", zap.Error(err))
