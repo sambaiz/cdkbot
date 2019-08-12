@@ -1,4 +1,4 @@
-.PHONY: clean build install-tools lint test _test
+.PHONY: clean build package install-tools lint test _test
 
 clean: 
 	rm -rf ./functions/operation/operation
@@ -8,8 +8,15 @@ clean:
 build:
 	GOOS=linux GOARCH=amd64 go build -o functions/operation/operation ./functions/operation
 	GOOS=linux GOARCH=amd64 go build -o functions/webhook/webhook ./functions/webhook
+	rm -rf npm-layer
 	docker build -t cdkbot-npmbin ./npm-lambda-layer
 	docker run cdkbot-npmbin cat /tmp/npm-layer.zip > npm-layer.zip && unzip npm-layer.zip -d npm-layer && rm npm-layer.zip
+
+package: build
+	sam package --output-template-file packaged.yaml --s3-bucket cdkbot
+
+publish: package
+	sam publish -t packaged.yaml
 
 install-tools:
 	go get -u golang.org/x/lint/golint

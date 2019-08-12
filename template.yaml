@@ -9,8 +9,8 @@ Metadata:
     Description: Application for Pull Request based AWS CDK operation
     Author: sambaiz
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: https://github.com/sambaiz/cdkbot/LICENSE
-    ReadmeUrl: https://github.com/sambaiz/cdkbot/README.md
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
     Labels: ['cloudformation', 'cdk']
     HomePageUrl: https://github.com/sambaiz/cdkbot
     SemanticVersion: 0.2.0
@@ -48,7 +48,7 @@ Resources:
       CodeUri: functions/webhook/
       Handler: webhook
       Runtime: go1.x
-      Role: !GetAtt InvokeGitHuFunctionbRole.Arn
+      Role: !GetAtt InvokeOperationFunctionRole.Arn
       Timeout: 10
       MemorySize: 128
       Environment:
@@ -77,7 +77,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
-  InvokeOperationFunctionbRole:
+  InvokeOperationFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -90,7 +90,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: "cdkbot_invoke_function"
+        - PolicyName: "cdkbot_invoke_operation_function"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
