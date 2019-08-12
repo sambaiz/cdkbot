@@ -3,6 +3,25 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Application for Pull Request based AWS CDK operation
 
+Parameters:
+  Platform:
+    Description: Only support github
+    Type: String
+    AllowedValues:
+      - github
+    Default: github
+  GitHubUserName:
+    Description: Name of the GitHub user calling the API
+    Type: String
+  GitHubAccessToken:
+    Description: Access token of the GitHub user calling the API
+    Type: String
+    NoEcho: true
+  GitHubWebhookSecret:
+    Description: Repository's webhook secret
+    Type: String
+    NoEcho: true
+
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: cdkbot
@@ -33,16 +52,16 @@ Resources:
         - !Ref NPMLayer
       Environment:
         Variables:
-          PLATFORM: github
-          GITHUB_USER_NAME: <USER NAME>
-          GITHUB_ACCESS_TOKEN: <ACCESS TOKEN>
-          GITHUB_WEBHOOK_SECRET: <GITHUB_WEBHOOK SECRET>
+          PLATFORM: !Ref Platform
+          GITHUB_USER_NAME: !Ref GitHubUserName
+          GITHUB_ACCESS_TOKEN: !Ref GitHubAccessToken
+          GITHUB_WEBHOOK_SECRET: !Ref GitHubWebhookSecret
   OperationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${OperationFunction}
       RetentionInDays: 14
-  WebHookFunction:
+  WebhookFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/webhook/
@@ -60,10 +79,10 @@ Resources:
           Properties:
             Path: /webhook
             Method: POST
-  WebHookFunctionLogGroup:
+  WebhookFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${WebHookFunction}
+      LogGroupName: !Sub /aws/lambda/${WebhookFunction}
       RetentionInDays: 14
   CDKRole:
     Type: AWS::IAM::Role
@@ -107,6 +126,6 @@ Resources:
         - go1.x
       RetentionPolicy: Delete
 Outputs:
-  WebHookEndpoint:
-    Description: "WebHook endpoint"
+  WebhookEndpoint:
+    Description: "Webhook endpoint"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook"

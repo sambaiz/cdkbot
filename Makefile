@@ -1,4 +1,4 @@
-.PHONY: clean build package install-tools lint test _test
+.PHONY: clean build package publish install-tools lint test _test
 
 clean: 
 	rm -rf ./functions/operation/operation
