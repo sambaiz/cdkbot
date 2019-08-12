@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sambaiz/cdkbot/functions/github/client"
+	"github.com/sambaiz/cdkbot/functions/operation/github/client"
 	"github.com/sambaiz/cdkbot/lib/config"
 	"github.com/stretchr/testify/assert"
 )

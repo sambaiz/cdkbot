@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/google/go-github/v26/github"
-	"github.com/sambaiz/cdkbot/functions/github/eventhandler"
+	"github.com/sambaiz/cdkbot/functions/operation/github/eventhandler"
 	"go.uber.org/zap"
 )
 
@@ -31,6 +32,14 @@ type response events.APIGatewayProxyResponse
 
 func handler(req events.APIGatewayProxyRequest) (response, error) {
 	ctx := context.Background()
+	switch os.Getenv("PLATFORM") {
+	case "github":
+		return gitHubHandler(ctx, req)
+	}
+	return response{}, fmt.Errorf("unknown PLATFORM %s is setted", os.Getenv("PLATFORM"))
+}
+
+func gitHubHandler(ctx context.Context, req events.APIGatewayProxyRequest) (response, error) {
 	if err := github.ValidateSignature(req.Headers["X-Hub-Signature"], []byte(req.Body), []byte(webhookSecret)); err != nil {
 		logger.Info("Signature is invalid", zap.Error(err))
 		return response{

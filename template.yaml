@@ -9,47 +9,48 @@ Globals:
     MemorySize: 1024
 
 Resources:
-  GitHubFunction:
+  OperationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/github/
-      Handler: github
+      CodeUri: functions/operation/
+      Handler: operation
       Runtime: go1.x
       Role: !GetAtt CDKRole.Arn
       Layers:
         - !Ref NPMLayer
       Environment:
         Variables:
+          PLATFORM: github
           GITHUB_USER_NAME: <USER NAME>
           GITHUB_ACCESS_TOKEN: <ACCESS TOKEN>
           GITHUB_WEBHOOK_SECRET: <GITHUB_WEBHOOK SECRET>
-  GitHubFunctionLogGroup:
+  OperationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${GitHubFunction}
+      LogGroupName: !Sub /aws/lambda/${OperationFunction}
       RetentionInDays: 14
-  GitHubWebHookFunction:
+  WebHookFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/github-webhook/
-      Handler: github-webhook
+      CodeUri: functions/webhook/
+      Handler: webhook
       Runtime: go1.x
       Role: !GetAtt InvokeGitHuFunctionbRole.Arn
       Timeout: 10
       MemorySize: 128
       Environment:
         Variables:
-          INVOKE_FUNTION_ARN: !GetAtt GitHubFunction.Arn
+          INVOKE_FUNTION_ARN: !GetAtt OperationFunction.Arn
       Events:
         CatchAll:
           Type: Api
           Properties:
-            Path: /github
+            Path: /webhook
             Method: POST
-  GitHubWebHookFunctionLogGroup:
+  WebHookFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${GitHubWebHookFunction}
+      LogGroupName: !Sub /aws/lambda/${WebHookFunction}
       RetentionInDays: 14
   CDKRole:
     Type: AWS::IAM::Role
@@ -63,7 +64,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
-  InvokeGitHuFunctionbRole:
+  InvokeOperationFunctionbRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -76,13 +77,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: "cdkbot_invoke_github_function"
+        - PolicyName: "cdkbot_invoke_function"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
                 Action: "lambda:InvokeFunction"
-                Resource: !GetAtt GitHubFunction.Arn
+                Resource: !GetAtt OperationFunction.Arn
   NPMLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -93,6 +94,6 @@ Resources:
         - go1.x
       RetentionPolicy: Delete
 Outputs:
-  GitHubWebHookEndpoint:
-    Description: "GitHub webhooks endpoint"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/github"
+  WebHookEndpoint:
+    Description: "WebHook endpoint"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook"

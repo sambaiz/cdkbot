@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v26/github"
-	"github.com/sambaiz/cdkbot/functions/github/client"
+	"github.com/sambaiz/cdkbot/functions/operation/github/client"
 )
 
 type issueCommentEvent struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sambaiz/cdkbot/functions/github/client"
+	"github.com/sambaiz/cdkbot/functions/operation/github/client"
 	"github.com/sambaiz/cdkbot/lib/cdk"
 	"github.com/sambaiz/cdkbot/lib/config"
 	"github.com/sambaiz/cdkbot/lib/git"

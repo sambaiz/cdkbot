@@ -1,5 +1,5 @@
-functions/github/github
-functions/github-webhook/github-webhook
+functions/operation/operation
+functions/webhook/webhook
 private-key.pem
 packaged.yaml
 my-template.yaml

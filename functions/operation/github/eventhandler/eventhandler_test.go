@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sambaiz/cdkbot/functions/github/client"
-	githubClientMock "github.com/sambaiz/cdkbot/functions/github/client/mock"
+	"github.com/sambaiz/cdkbot/functions/operation/github/client"
+	githubClientMock "github.com/sambaiz/cdkbot/functions/operation/github/client/mock"
 	cdkMock "github.com/sambaiz/cdkbot/lib/cdk/mock"
 	"github.com/sambaiz/cdkbot/lib/config"
 	configMock "github.com/sambaiz/cdkbot/lib/config/mock"
