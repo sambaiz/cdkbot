@@ -29,11 +29,15 @@ func (e *EventHandler) IssueComment(
 		commentBody: ev.GetComment().GetBody(),
 		cloneURL:    ev.GetRepo().GetCloneURL(),
 	}
-	var f func() (client.State, error)
+	var f func() (client.State, string, error)
 	switch ev.GetAction() {
 	case "created":
-		f = func() (client.State, error) {
-			return e.issueCommentCreated(ctx, event)
+		cmd := parseCommand(event.commentBody)
+		if cmd == nil {
+			return nil
+		}
+		f = func() (client.State, string, error) {
+			return e.issueCommentCreated(ctx, event, cmd)
 		}
 	default:
 		return nil
@@ -50,11 +54,8 @@ func (e *EventHandler) IssueComment(
 func (e *EventHandler) issueCommentCreated(
 	ctx context.Context,
 	event issueCommentEvent,
-) (client.State, error) {
-	cmd := parseCommand(event.commentBody)
-	if cmd == nil {
-		return client.StateSuccess, nil
-	}
+	cmd *command,
+) (client.State, string, error) {
 	cdkPath, _, target, err := e.setup(
 		ctx,
 		event.ownerName,
@@ -63,10 +64,10 @@ func (e *EventHandler) issueCommentCreated(
 		event.cloneURL,
 	)
 	if err != nil {
-		return client.StateError, err
+		return client.StateError, err.Error(), err
 	}
 	if target == nil {
-		return client.StateSuccess, err
+		return client.StateSuccess, "No targets are matched", nil
 	}
 	var hasDiff bool
 	switch cmd.action {
@@ -75,15 +76,15 @@ func (e *EventHandler) issueCommentCreated(
 	case actionDeploy:
 		hasDiff, err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
 	default:
-		return client.StateSuccess, nil
+		return client.StateError, fmt.Sprintf("Command %s is unknown", cmd.action), nil
 	}
 	if err != nil {
-		return client.StateError, err
+		return client.StateError, err.Error(), err
 	}
 	if hasDiff {
-		return client.StateFailure, nil
+		return client.StateFailure, "Diffs still remain", nil
 	}
-	return client.StateSuccess, nil
+	return client.StateSuccess, "There are no diffs. Let's merge!", nil
 }
 
 type action string

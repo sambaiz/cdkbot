@@ -33,7 +33,7 @@ func (e *EventHandler) updateStatus(
 	ownerName string,
 	repoName string,
 	issueNumber int,
-	f func() (client.State, error),
+	f func() (client.State, string, error),
 ) error {
 	if err := e.cli.CreateStatusOfLatestCommit(
 		ctx,
@@ -41,10 +41,11 @@ func (e *EventHandler) updateStatus(
 		repoName,
 		issueNumber,
 		client.StatePending,
+		nil,
 	); err != nil {
 		return err
 	}
-	state, err := f()
+	state, statusDescription, err := f()
 	defer func() {
 		e.cli.CreateStatusOfLatestCommit(
 			ctx,
@@ -52,6 +53,7 @@ func (e *EventHandler) updateStatus(
 			repoName,
 			issueNumber,
 			state,
+			&statusDescription,
 		)
 	}()
 	if err != nil {

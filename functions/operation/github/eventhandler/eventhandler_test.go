@@ -23,8 +23,9 @@ func TestEventHandlerUpdateStatus(t *testing.T) {
 	repoName := "repo"
 	issueNumber := 1
 	resultState := client.StateSuccess
-	githubClient.EXPECT().CreateStatusOfLatestCommit(ctx, ownerName, repoName, issueNumber, client.StatePending).Return(nil)
-	githubClient.EXPECT().CreateStatusOfLatestCommit(ctx, ownerName, repoName, issueNumber, resultState).Return(nil)
+	statusDescription := "description"
+	githubClient.EXPECT().CreateStatusOfLatestCommit(ctx, ownerName, repoName, issueNumber, client.StatePending, nil).Return(nil)
+	githubClient.EXPECT().CreateStatusOfLatestCommit(ctx, ownerName, repoName, issueNumber, resultState, &statusDescription).Return(nil)
 	eventHandler := EventHandler{
 		cli: githubClient,
 	}
@@ -33,8 +34,8 @@ func TestEventHandlerUpdateStatus(t *testing.T) {
 		ownerName,
 		repoName,
 		issueNumber,
-		func() (client.State, error) {
-			return resultState, nil
+		func() (client.State, string, error) {
+			return resultState, statusDescription, nil
 		},
 	))
 }

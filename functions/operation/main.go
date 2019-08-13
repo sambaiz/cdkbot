@@ -14,10 +14,8 @@ import (
 )
 
 var (
-	logger        *zap.Logger
-	appID         = os.Getenv("GITHUB_APP_ID")
-	privateKeyArn = os.Getenv("PRIVATE_KEY_SECRET_ARN")
-	webhookSecret = os.Getenv("GITHUB_WEBHOOK_SECRET")
+	logger              *zap.Logger
+	gitHubWebhookSecret = os.Getenv("GITHUB_WEBHOOK_SECRET")
 )
 
 func initLogger() {
@@ -40,7 +38,7 @@ func handler(req events.APIGatewayProxyRequest) (response, error) {
 }
 
 func gitHubHandler(ctx context.Context, req events.APIGatewayProxyRequest) (response, error) {
-	if err := github.ValidateSignature(req.Headers["X-Hub-Signature"], []byte(req.Body), []byte(webhookSecret)); err != nil {
+	if err := github.ValidateSignature(req.Headers["X-Hub-Signature"], []byte(req.Body), []byte(gitHubWebhookSecret)); err != nil {
 		logger.Info("Signature is invalid", zap.Error(err))
 		return response{
 			StatusCode: http.StatusBadRequest,

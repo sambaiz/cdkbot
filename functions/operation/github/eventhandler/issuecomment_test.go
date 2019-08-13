@@ -13,12 +13,14 @@ import (
 
 func TestEventHandlerIssueCommentCreated(t *testing.T) {
 	tests := []struct {
-		title      string
-		in         issueCommentEvent
-		cfg        config.Config
-		baseBranch string
-		out        client.State
-		isError    bool
+		title                string
+		in                   issueCommentEvent
+		cfg                  config.Config
+		baseBranch           string
+		resultHasDiff        bool
+		outState             client.State
+		outStatusDescription string
+		isError              bool
 	}{
 		{
 			title: "no targets are matched",
@@ -35,11 +37,12 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch: "develop",
-			out:        client.StateSuccess,
+			baseBranch:           "develop",
+			outState:             client.StateSuccess,
+			outStatusDescription: "No targets are matched",
 		},
 		{
-			title: "comment diff and has diff",
+			title: "comment diff and has diffs",
 			in: issueCommentEvent{
 				ownerName:   "owner",
 				repoName:    "repo",
@@ -57,11 +60,13 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					},
 				},
 			},
-			baseBranch: "develop",
-			out:        client.StateFailure,
+			baseBranch:           "develop",
+			resultHasDiff:        true,
+			outState:             client.StateFailure,
+			outStatusDescription: "Diffs still remain",
 		},
 		{
-			title: "comment deploy and success",
+			title: "comment deploy and has no diffs",
 			in: issueCommentEvent{
 				ownerName:   "owner",
 				repoName:    "repo",
@@ -79,8 +84,10 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					},
 				},
 			},
-			baseBranch: "develop",
-			out:        client.StateSuccess,
+			baseBranch:           "develop",
+			resultHasDiff:        false,
+			outState:             client.StateSuccess,
+			outStatusDescription: "There are no diffs. Let's merge!",
 		},
 	}
 
@@ -90,6 +97,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		event issueCommentEvent,
 		cfg config.Config,
 		baseBranch string,
+		resultHasDiff bool,
 	) *EventHandler {
 		githubClient, gitClient, configClient, cdkClient := constructSetupMocks(
 			ctx,
@@ -117,7 +125,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		if cmd.action == actionDiff {
 			// doActionDiff()
 			result := "result"
-			cdkClient.EXPECT().Diff(cdkPath, cmd.args, target.Contexts).Return(result, true)
+			cdkClient.EXPECT().Diff(cdkPath, cmd.args, target.Contexts).Return(result, resultHasDiff)
 			githubClient.EXPECT().CreateComment(
 				ctx,
 				event.ownerName,
@@ -129,7 +137,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			// doActionDeploy()
 			result := "result"
 			cdkClient.EXPECT().Deploy(cdkPath, cmd.args, target.Contexts).Return(result, nil)
-			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", false)
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
 			githubClient.EXPECT().CreateComment(
 				ctx,
 				event.ownerName,
@@ -152,10 +160,12 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			eventHandler := constructEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
-			state, err := eventHandler.issueCommentCreated(ctx, test.in)
+			eventHandler := constructEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch, test.resultHasDiff)
+			cmd := parseCommand(test.in.commentBody)
+			state, statusDescription, err := eventHandler.issueCommentCreated(ctx, test.in, cmd)
 			assert.Equal(t, test.isError, err != nil)
-			assert.Equal(t, test.out, state)
+			assert.Equal(t, test.outState, state)
+			assert.Equal(t, test.outStatusDescription, statusDescription)
 		})
 	}
 }

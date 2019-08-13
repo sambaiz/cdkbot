@@ -31,6 +31,8 @@ test:
 	docker rm -f cdkbot-test || true
 	docker run -itd --name cdkbot-test cdkbot-test /bin/sh
 	docker cp . cdkbot-test:/root/cdkbot
+	go mod download
+	docker cp `go env GOPATH`/pkg/mod/cache cdkbot-test:/go/pkg/mod/cache
 	docker exec cdkbot-test make _test
 	docker rm -f cdkbot-test
 

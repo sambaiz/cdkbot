@@ -35,17 +35,17 @@ func (m *MockClienter) EXPECT() *MockClienterMockRecorder {
 }
 
 // CreateStatusOfLatestCommit mocks base method
-func (m *MockClienter) CreateStatusOfLatestCommit(ctx context.Context, owner, repo string, number int, state client.State) error {
+func (m *MockClienter) CreateStatusOfLatestCommit(ctx context.Context, owner, repo string, number int, state client.State, description *string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateStatusOfLatestCommit", ctx, owner, repo, number, state)
+	ret := m.ctrl.Call(m, "CreateStatusOfLatestCommit", ctx, owner, repo, number, state, description)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateStatusOfLatestCommit indicates an expected call of CreateStatusOfLatestCommit
-func (mr *MockClienterMockRecorder) CreateStatusOfLatestCommit(ctx, owner, repo, number, state interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) CreateStatusOfLatestCommit(ctx, owner, repo, number, state, description interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStatusOfLatestCommit", reflect.TypeOf((*MockClienter)(nil).CreateStatusOfLatestCommit), ctx, owner, repo, number, state)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStatusOfLatestCommit", reflect.TypeOf((*MockClienter)(nil).CreateStatusOfLatestCommit), ctx, owner, repo, number, state, description)
 }
 
 // CreateComment mocks base method

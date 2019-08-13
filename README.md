@@ -1,6 +1,6 @@
-# CDKBot
+# cdkbot
 
-CDKBot is an application for Pull Request based AWS CDK operation.
+cdkbot is an application for Pull Request based AWS CDK operation.
 Currently only GitHub is supported.
 
 ## Operations
@@ -14,7 +14,7 @@ If no stacks are specified, all stacks are passed.
 ### FYI: Why deploys before merged, not after merged?
 
 cdk deploy fails unexpectedly due to runtime errors of CF template and may need to be fixed.
-Therefore, if it deploys when merged, incorrect codes can be mixed and one or more PRs must be opened to fix, which flagment changes. That's why execute commands on PR before merged.
+Therefore, if it deploys after merged, incorrect codes can be mixed and one or more PRs must be opened to fix, which flagment changes. That's why execute commands on PR before merged.
 
 ## Configurations
 

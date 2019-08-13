@@ -29,6 +29,7 @@ func (c *Client) CreateStatusOfLatestCommit(
 	repo string,
 	number int,
 	state State,
+	description *string,
 ) error {
 	hash, err := c.GetPullRequestLatestCommitHash(ctx, owner, repo, number)
 	if err != nil {
@@ -37,8 +38,9 @@ func (c *Client) CreateStatusOfLatestCommit(
 
 	st := string(state)
 	_, _, err = c.client.Repositories.CreateStatus(ctx, owner, repo, hash, &github.RepoStatus{
-		State:   &st,
-		Context: &statusContext,
+		State:       &st,
+		Context:     &statusContext,
+		Description: description,
 	})
 	if err != nil {
 		return err

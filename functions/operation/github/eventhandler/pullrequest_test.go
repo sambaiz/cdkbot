@@ -13,12 +13,14 @@ import (
 
 func TestEventHandlerPullRequestOpened(t *testing.T) {
 	tests := []struct {
-		title      string
-		in         pullRequestEvent
-		cfg        config.Config
-		baseBranch string
-		out        client.State
-		isError    bool
+		title                string
+		in                   pullRequestEvent
+		cfg                  config.Config
+		baseBranch           string
+		resultHasDiff        bool
+		outState             client.State
+		outStatusDescription string
+		isError              bool
 	}{
 		{
 			title: "no targets are matched",
@@ -34,11 +36,12 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch: "develop",
-			out:        client.StateSuccess,
+			baseBranch:           "develop",
+			outState:             client.StateSuccess,
+			outStatusDescription: "No targets are matched",
 		},
 		{
-			title: "target is matched",
+			title: "target is matched and has diffs",
 			in: pullRequestEvent{
 				ownerName: "owner",
 				repoName:  "repo",
@@ -55,8 +58,10 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 					},
 				},
 			},
-			baseBranch: "develop",
-			out:        client.StateFailure,
+			baseBranch:           "develop",
+			resultHasDiff:        true,
+			outState:             client.StateFailure,
+			outStatusDescription: "There are diffs",
 		},
 	}
 
@@ -66,6 +71,7 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 		event pullRequestEvent,
 		cfg config.Config,
 		baseBranch string,
+		resultHasDiff bool,
 	) *EventHandler {
 		githubClient, gitClient, configClient, cdkClient := constructSetupMocks(
 			ctx,
@@ -90,7 +96,7 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 		target := cfg.Targets[baseBranch]
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		result := "result"
-		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, true)
+		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff)
 		githubClient.EXPECT().CreateComment(
 			ctx,
 			event.ownerName,
@@ -112,10 +118,11 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			eventHandler := constructEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch)
-			state, err := eventHandler.pullRequestOpened(ctx, test.in)
+			eventHandler := constructEventHandlerWithMock(ctx, ctrl, test.in, test.cfg, test.baseBranch, test.resultHasDiff)
+			state, statusDescription, err := eventHandler.pullRequestOpened(ctx, test.in)
 			assert.Equal(t, test.isError, err != nil)
-			assert.Equal(t, test.out, state)
+			assert.Equal(t, test.outState, state)
+			assert.Equal(t, test.outStatusDescription, statusDescription)
 		})
 	}
 }

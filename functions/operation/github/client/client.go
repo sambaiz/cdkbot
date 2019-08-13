@@ -16,6 +16,7 @@ type Clienter interface {
 		repo string,
 		number int,
 		state State,
+		description *string,
 	) error
 	CreateComment(
 		ctx context.Context,

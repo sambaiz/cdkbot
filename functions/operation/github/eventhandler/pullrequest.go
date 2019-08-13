@@ -26,10 +26,10 @@ func (e *EventHandler) PullRequest(
 		prNumber:  ev.GetPullRequest().GetNumber(),
 		cloneURL:  ev.GetRepo().GetCloneURL(),
 	}
-	var f func() (client.State, error)
+	var f func() (client.State, string, error)
 	switch ev.GetAction() {
 	case "opened":
-		f = func() (client.State, error) {
+		f = func() (client.State, string, error) {
 			return e.pullRequestOpened(ctx, event)
 		}
 	default:
@@ -47,13 +47,13 @@ func (e *EventHandler) PullRequest(
 func (e *EventHandler) pullRequestOpened(
 	ctx context.Context,
 	event pullRequestEvent,
-) (client.State, error) {
+) (client.State, string, error) {
 	cdkPath, _, target, err := e.setup(ctx, event.ownerName, event.repoName, event.prNumber, event.cloneURL)
 	if err != nil {
-		return client.StateError, err
+		return client.StateError, err.Error(), err
 	}
 	if target == nil {
-		return client.StateSuccess, err
+		return client.StateSuccess, "No targets are matched", nil
 	}
 	diff, hasDiff := e.cdk.Diff(cdkPath, "", target.Contexts)
 	message := ""
@@ -67,10 +67,10 @@ func (e *EventHandler) pullRequestOpened(
 		event.prNumber,
 		fmt.Sprintf("### cdk diff\n```%s```\n%s", diff, message),
 	); err != nil {
-		return client.StateError, err
+		return client.StateError, err.Error(), err
 	}
 	if hasDiff {
-		return client.StateFailure, nil
+		return client.StateFailure, "There are diffs", nil
 	}
-	return client.StateSuccess, nil
+	return client.StateSuccess, "There are no diffs. Let's merge!", nil
 }
