@@ -84,7 +84,7 @@ func (e *EventHandler) issueCommentCreated(
 	if hasDiff {
 		return client.StateFailure, "Diffs still remain", nil
 	}
-	return client.StateSuccess, "There are no diffs. Let's merge!", nil
+	return client.StateSuccess, "No diffs. Let's merge!", nil
 }
 
 type action string
@@ -133,7 +133,7 @@ func (e *EventHandler) doActionDiff(
 		event.ownerName,
 		event.repoName,
 		event.issueNumber,
-		fmt.Sprintf("### cdk diff %s\n```%s```", args, diff),
+		fmt.Sprintf("### cdk diff %s\n```\n%s\n```", args, diff),
 	); err != nil {
 		return false, err
 	}
@@ -169,7 +169,7 @@ func (e *EventHandler) doActionDeploy(
 		event.ownerName,
 		event.repoName,
 		event.issueNumber,
-		fmt.Sprintf("### cdk deploy %s\n```%s```\n%s", args, result, message),
+		fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", args, result, message),
 	); err != nil {
 		return false, err
 	}

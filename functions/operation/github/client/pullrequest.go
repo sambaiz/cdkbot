@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"strings"
 )
 
 // GetPullRequestLatestCommitHash gets latest commit hash in PR
@@ -33,5 +34,7 @@ func (c *Client) GetPullRequestBaseBranch(
 	if err != nil {
 		return "", err
 	}
-	return pr.GetBase().GetLabel(), nil
+	// Trim username from username:branch
+	parts := strings.Split(pr.GetBase().GetLabel(), ":")
+	return parts[len(parts)-1], nil
 }

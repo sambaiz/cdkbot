@@ -58,19 +58,19 @@ func (e *EventHandler) pullRequestOpened(
 	diff, hasDiff := e.cdk.Diff(cdkPath, "", target.Contexts)
 	message := ""
 	if !hasDiff {
-		message = "\nNo stacks are updated"
+		message = "No stacks are updated"
 	}
 	if err := e.cli.CreateComment(
 		ctx,
 		event.ownerName,
 		event.repoName,
 		event.prNumber,
-		fmt.Sprintf("### cdk diff\n```%s```\n%s", diff, message),
+		fmt.Sprintf("### cdk diff\n```\n%s\n```\n%s", diff, message),
 	); err != nil {
 		return client.StateError, err.Error(), err
 	}
 	if hasDiff {
-		return client.StateFailure, "There are diffs", nil
+		return client.StateFailure, "There are differences", nil
 	}
-	return client.StateSuccess, "There are no diffs. Let's merge!", nil
+	return client.StateSuccess, "No diffs. Let's merge!", nil
 }
