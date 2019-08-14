@@ -62,6 +62,20 @@ func (mr *MockClienterMockRecorder) CreateComment(ctx, owner, repo, number, body
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComment", reflect.TypeOf((*MockClienter)(nil).CreateComment), ctx, owner, repo, number, body)
 }
 
+// AddLabels mocks base method
+func (m *MockClienter) AddLabels(ctx context.Context, owner, repo string, number int, labels []label) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddLabels", ctx, owner, repo, number, labels)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddLabels indicates an expected call of AddLabels
+func (mr *MockClienterMockRecorder) AddLabels(ctx, owner, repo, number, labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLabels", reflect.TypeOf((*MockClienter)(nil).AddLabels), ctx, owner, repo, number, labels)
+}
+
 // GetPullRequestLatestCommitHash mocks base method
 func (m *MockClienter) GetPullRequestLatestCommitHash(ctx context.Context, owner, repo string, number int) (string, error) {
 	m.ctrl.T.Helper()
@@ -90,4 +104,19 @@ func (m *MockClienter) GetPullRequestBaseBranch(ctx context.Context, owner, repo
 func (mr *MockClienterMockRecorder) GetPullRequestBaseBranch(ctx, owner, repo, number interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestBaseBranch", reflect.TypeOf((*MockClienter)(nil).GetPullRequestBaseBranch), ctx, owner, repo, number)
+}
+
+// GetOpenPullRequestNumbers mocks base method
+func (m *MockClienter) GetOpenPullRequestNumbers(ctx context.Context, owner, repo string) ([]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOpenPullRequestNumbers", ctx, owner, repo)
+	ret0, _ := ret[0].([]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOpenPullRequestNumbers indicates an expected call of GetOpenPullRequestNumbers
+func (mr *MockClienterMockRecorder) GetOpenPullRequestNumbers(ctx, owner, repo interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOpenPullRequestNumbers", reflect.TypeOf((*MockClienter)(nil).GetOpenPullRequestNumbers), ctx, owner, repo)
 }

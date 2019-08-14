@@ -25,6 +25,20 @@ type Clienter interface {
 		number int,
 		body string,
 	) error
+	AddLabels(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+		labels []Label,
+	) error
+	RemoveLabel(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+		label Label,
+	) error
 	GetPullRequestLatestCommitHash(
 		ctx context.Context,
 		owner string,
@@ -37,6 +51,11 @@ type Clienter interface {
 		repo string,
 		number int,
 	) (string, error)
+	GetOpenPullRequestNumbers(
+		ctx context.Context,
+		owner string,
+		repo string,
+	) ([]int, error)
 }
 
 // Client is struct of GitHub Client

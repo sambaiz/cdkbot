@@ -70,7 +70,25 @@ func (e *EventHandler) pullRequestOpened(
 		return client.StateError, err.Error(), err
 	}
 	if hasDiff {
+		if err := e.cli.RemoveLabel(
+			ctx,
+			event.ownerName,
+			event.repoName,
+			event.prNumber,
+			client.LabelNoDiff,
+		); err != nil {
+			return client.StateError, err.Error(), err
+		}
 		return client.StateFailure, "There are differences", nil
+	}
+	if err := e.cli.AddLabels(
+		ctx,
+		event.ownerName,
+		event.repoName,
+		event.prNumber,
+		[]client.Label{client.LabelNoDiff},
+	); err != nil {
+		return client.StateError, err.Error(), err
 	}
 	return client.StateSuccess, "No diffs. Let's merge!", nil
 }

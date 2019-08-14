@@ -73,16 +73,64 @@ func (e *EventHandler) issueCommentCreated(
 	switch cmd.action {
 	case actionDiff:
 		hasDiff, err = e.doActionDiff(ctx, event, cdkPath, cmd.args, target.Contexts)
+		if err != nil {
+			return client.StateError, err.Error(), err
+		}
+		if err := e.cli.RemoveLabel(
+			ctx,
+			event.ownerName,
+			event.repoName,
+			event.issueNumber,
+			client.LabelOutdatedDiff,
+		); err != nil {
+			return client.StateError, err.Error(), err
+		}
 	case actionDeploy:
+		if err := e.cli.AddLabels(
+			ctx,
+			event.ownerName,
+			event.repoName,
+			event.issueNumber,
+			[]client.Label{client.LabelDeploying},
+		); err != nil {
+			return client.StateError, err.Error(), err
+		}
 		hasDiff, err = e.doActionDeploy(ctx, event, cdkPath, cmd.args, target.Contexts)
+		if err != nil {
+			return client.StateError, err.Error(), err
+		}
+		if err := e.cli.RemoveLabel(
+			ctx,
+			event.ownerName,
+			event.repoName,
+			event.issueNumber,
+			client.LabelDeploying,
+		); err != nil {
+			return client.StateError, err.Error(), err
+		}
 	default:
 		return client.StateError, fmt.Sprintf("Command %s is unknown", cmd.action), nil
 	}
-	if err != nil {
-		return client.StateError, err.Error(), err
-	}
 	if hasDiff {
+		if err := e.cli.RemoveLabel(
+			ctx,
+			event.ownerName,
+			event.repoName,
+			event.issueNumber,
+			client.LabelNoDiff,
+		); err != nil {
+			return client.StateError, err.Error(), err
+		}
 		return client.StateFailure, "Diffs still remain", nil
+	}
+	if err := e.cli.AddLabels(
+		ctx,
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+		[]client.Label{client.LabelNoDiff},
+	); err != nil {
+		return client.StateError, err.Error(), err
 	}
 	return client.StateSuccess, "No diffs. Let's merge!", nil
 }
@@ -173,5 +221,38 @@ func (e *EventHandler) doActionDeploy(
 	); err != nil {
 		return false, err
 	}
+	if err := e.addOutdatedDiffLabelToOtherPR(
+		ctx,
+		event.ownerName,
+		event.repoName,
+		event.issueNumber,
+	); err != nil {
+		return false, err
+	}
 	return hasDiff, nil
+}
+
+func (e *EventHandler) addOutdatedDiffLabelToOtherPR(
+	ctx context.Context,
+	owner string,
+	repo string,
+	number int,
+) error {
+	numbers, err := e.cli.GetOpenPullRequestNumbers(
+		ctx,
+		owner,
+		repo,
+	)
+	if err != nil {
+		return err
+	}
+	for _, num := range numbers {
+		if num == number {
+			continue
+		}
+		if err := e.cli.AddLabels(ctx, owner, repo, num, []client.Label{client.LabelOutdatedDiff}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

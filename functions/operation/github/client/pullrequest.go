@@ -38,3 +38,19 @@ func (c *Client) GetPullRequestBaseBranch(
 	parts := strings.Split(pr.GetBase().GetLabel(), ":")
 	return parts[len(parts)-1], nil
 }
+
+func (c *Client) GetOpenPullRequestNumbers(
+	ctx context.Context,
+	owner string,
+	repo string,
+) ([]int, error) {
+	prs, _, err := c.client.PullRequests.List(ctx, owner, repo, nil)
+	if err != nil {
+		return nil, err
+	}
+	numbers := make([]int, 0, len(prs))
+	for _, pr := range prs {
+		numbers = append(numbers, pr.GetNumber())
+	}
+	return numbers, nil
+}
