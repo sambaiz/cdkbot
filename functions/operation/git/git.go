@@ -1,37 +1,38 @@
 package git
 
 import (
-	"os"
 	"os/exec"
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Clienter is interface of git client
 type Clienter interface {
-	Clone(url, path string, hash *string) error
+	Clone(path string, hash *string) error
 }
 
 // Client is git client
-type Client struct{}
+type Client struct{
+	cloneOptions *git.CloneOptions
+}
+
+func NewClient(cloneOptions *git.CloneOptions) *Client {
+	return &Client{
+		cloneOptions: cloneOptions,
+	}
+}
+
 
 // Clone a git repository
-func (*Client) Clone(url, path string, hash *string) error {
+func (c *Client) Clone(path string, hash *string) error {
 	if err := exec.Command("rm", "-rf", path).Run(); err != nil {
 		return err
 	}
 	if err := exec.Command("mkdir", path).Run(); err != nil {
 		return err
 	}
-	repo, err := git.PlainClone(path, false, &git.CloneOptions{
-		URL: url,
-		Auth: &http.BasicAuth{
-			Username: os.Getenv("GITHUB_USER_NAME"),
-			Password: os.Getenv("GITHUB_ACCESS_TOKEN"),
-		},
-	})
+	repo, err := git.PlainClone(path, false, c.cloneOptions)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-.PHONY: clean build package publish install-tools lint test _test
+.PHONY: clean build package publish install-tools lint test _test doc
 
 clean: 
 	rm -rf ./functions/operation/operation
@@ -40,7 +40,7 @@ _test:
 	go test ./...
 
 mock:
-	mockgen -package mock -source lib/cdk/cdk.go -destination lib/cdk/mock/cdk_mock.go
-	mockgen -package mock -source lib/config/config.go -destination lib/config/mock/config_mock.go
-	mockgen -package mock -source lib/git/git.go -destination lib/git/mock/git_mock.go
-	mockgen -package mock -source functions/operation/github/client/client.go -destination functions/operation/github/client/mock/client_mock.go
+	mockgen -package mock -source functions/operation/cdk/cdk.go -destination functions/operation/cdk/mock/cdk_mock.go
+	mockgen -package mock -source functions/operation/config/config.go -destination functions/operation/config/mock/config_mock.go
+	mockgen -package mock -source functions/operation/git/git.go -destination functions/operation/git/mock/git_mock.go
+	mockgen -package mock -source functions/operation/platform/client.go -destination functions/operation/platform/mock/client_mock.go

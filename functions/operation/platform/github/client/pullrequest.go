@@ -6,14 +6,9 @@ import (
 	"strings"
 )
 
-// GetPullRequestLatestCommitHash gets latest commit hash in PR
-func (c *Client) GetPullRequestLatestCommitHash(
-	ctx context.Context,
-	owner string,
-	repo string,
-	number int,
-) (string, error) {
-	commits, _, err := c.client.PullRequests.ListCommits(ctx, owner, repo, number, nil)
+// GetPullRequestLatestCommitHash gets latest commit hash of PR
+func (c *Client) GetPullRequestLatestCommitHash(ctx context.Context) (string, error) {
+	commits, _, err := c.client.PullRequests.ListCommits(ctx, c.owner, c.repo, c.number, nil)
 	if err != nil {
 		return "", err
 	}
@@ -23,14 +18,11 @@ func (c *Client) GetPullRequestLatestCommitHash(
 	return commits[len(commits)-1].GetSHA(), nil
 }
 
-// GetPullRequestBaseBranch gets base branch of pull request
+// GetPullRequestBaseBranch gets base branch of PR
 func (c *Client) GetPullRequestBaseBranch(
 	ctx context.Context,
-	owner string,
-	repo string,
-	number int,
 ) (string, error) {
-	pr, _, err := c.client.PullRequests.Get(ctx, owner, repo, number)
+	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
 	if err != nil {
 		return "", err
 	}
@@ -39,12 +31,10 @@ func (c *Client) GetPullRequestBaseBranch(
 	return parts[len(parts)-1], nil
 }
 
-func (c *Client) GetOpenPullRequestNumbers(
+func (c *Client) getOpenPullRequestNumbers(
 	ctx context.Context,
-	owner string,
-	repo string,
 ) ([]int, error) {
-	prs, _, err := c.client.PullRequests.List(ctx, owner, repo, nil)
+	prs, _, err := c.client.PullRequests.List(ctx, c.owner, c.repo, nil)
 	if err != nil {
 		return nil, err
 	}
