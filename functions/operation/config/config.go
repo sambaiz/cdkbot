@@ -39,6 +39,7 @@ func (*Reader) Read(path string) (*Config, error) {
 	return &config, nil
 }
 
+// IsUserAllowedDeploy returns whether user is allowed to deploy
 func (c *Config) IsUserAllowedDeploy(userName string) bool {
 	if len(c.DeployUsers) == 0 {
 		return true

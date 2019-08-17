@@ -20,19 +20,18 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		title                  string
 		inUserName             string
 		inComment              string
-		inNameToLabel          map[string]constant.Label
 		cfg                    config.Config
 		baseBranch             string
+		labels                 map[string]constant.Label
 		resultHasDiff          bool
 		resultState            constant.State
 		resultStateDescription string
 		isError                bool
 	}{
 		{
-			title:         "no targets are matched",
-			inUserName:    "sambaiz",
-			inComment:     "/deploy TestStack",
-			inNameToLabel: map[string]constant.Label{},
+			title:      "no targets are matched",
+			inUserName: "sambaiz",
+			inComment:  "/deploy TestStack",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -45,10 +44,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			resultStateDescription: "No targets are matched",
 		},
 		{
-			title:         "comment diff and has diffs",
-			inUserName:    "sambaiz",
-			inComment:     "/diff",
-			inNameToLabel: map[string]constant.Label{},
+			title:      "comment diff and has diffs",
+			inUserName: "sambaiz",
+			inComment:  "/diff",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -65,10 +63,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			resultStateDescription: "Diffs still remain",
 		},
 		{
-			title:         "comment deploy and has no diffs",
-			inUserName:    "sambaiz",
-			inComment:     "/deploy TestStack",
-			inNameToLabel: map[string]constant.Label{},
+			title:      "comment deploy and has no diffs",
+			inUserName: "sambaiz",
+			inComment:  "/deploy TestStack",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -85,10 +82,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			resultStateDescription: "No diffs. Let's merge!",
 		},
 		{
-			title:         "comment deploy but user is not allowed to deploy",
-			inUserName:    "sambaiz",
-			inComment:     "/deploy TestStack",
-			inNameToLabel: map[string]constant.Label{},
+			title:      "comment deploy but user is not allowed to deploy",
+			inUserName: "sambaiz",
+			inComment:  "/deploy TestStack",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -102,10 +98,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			resultStateDescription: "User sambaiz is not allowed to deploy",
 		},
 		{
-			title:         "comment deploy but since differences are outdated so run /diff instead",
-			inUserName:    "sambaiz",
-			inComment:     "/deploy TestStack",
-			inNameToLabel: map[string]constant.Label{constant.LabelOutdatedDiff.Name: constant.LabelOutdatedDiff},
+			title:      "comment deploy but since differences are outdated so run /diff instead",
+			inUserName: "sambaiz",
+			inComment:  "/deploy TestStack",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -114,6 +109,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				DeployUsers: []string{"foobar"},
 			},
 			baseBranch:             "develop",
+			labels:                 map[string]constant.Label{constant.LabelOutdatedDiff.Name: constant.LabelOutdatedDiff},
 			resultHasDiff:          true,
 			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "Diffs still remain",
@@ -125,9 +121,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		ctrl *gomock.Controller,
 		userName string,
 		comment string,
-		nameToLabel map[string]constant.Label,
 		cfg config.Config,
 		baseBranch string,
+		labels map[string]constant.Label,
 		resultHasDiff bool,
 		resultState constant.State,
 		resultStateDescription string,
@@ -162,11 +158,17 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		cmd := parseCommand(comment)
-		if _, ok := nameToLabel[constant.LabelOutdatedDiff.Name]; ok && cmd.action == actionDeploy {
-			platformClient.EXPECT().CreateComment(ctx, "Differences are outdated. Run /diff instead.").Return(nil)
-			cmd.action = actionDiff
-			cmd.args = ""
+
+		if cmd.action == actionDeploy {
+			// hasOutdatedDiffLabel()
+			platformClient.EXPECT().GetPullRequestLabels(ctx).Return(labels, nil)
+			if _, ok := labels[constant.LabelOutdatedDiff.Name]; ok {
+				platformClient.EXPECT().CreateComment(ctx, "Differences are outdated. Run /diff instead.").Return(nil)
+				cmd.action = actionDiff
+				cmd.args = ""
+			}
 		}
+
 		if cmd.action == actionDiff {
 			// doActionDiff()
 			result := "result"
@@ -186,9 +188,8 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				}
 			}
 
-			platformClient.EXPECT().AddLabel(ctx, constant.LabelDeploying).Return(nil)
-
 			// doActionDeploy()
+			platformClient.EXPECT().AddLabel(ctx, constant.LabelDeploying).Return(nil)
 			result := "result"
 			cdkClient.EXPECT().Deploy(cdkPath, cmd.args, target.Contexts).Return(result, nil)
 			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
@@ -197,7 +198,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
 			).Return(nil)
 			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
-
 			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelDeploying).Return(nil)
 		}
 
@@ -225,14 +225,14 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				ctrl,
 				test.inUserName,
 				test.inComment,
-				test.inNameToLabel,
 				test.cfg,
 				test.baseBranch,
+				test.labels,
 				test.resultHasDiff,
 				test.resultState,
 				test.resultStateDescription)
 			assert.Equal(t, test.isError,
-				eventHandler.CommentCreated(ctx, test.inUserName, test.inComment, test.inNameToLabel) != nil,
+				eventHandler.CommentCreated(ctx, test.inUserName, test.inComment) != nil,
 			)
 		})
 	}
@@ -271,6 +271,41 @@ func TestParseCommand(t *testing.T) {
 		t.Run(test.title, func(t *testing.T) {
 			cmd := parseCommand(test.in)
 			assert.Equal(t, test.out, cmd)
+		})
+	}
+}
+
+func TestEventHandlerHasOutdatedDiff(t *testing.T) {
+	tests := []struct {
+		title   string
+		labels  map[string]constant.Label
+		out     bool
+		isError bool
+	}{
+		{
+			title:  "has",
+			labels: map[string]constant.Label{constant.LabelOutdatedDiff.Name: constant.LabelOutdatedDiff},
+			out:    true,
+		},
+		{
+			title:  "not has",
+			labels: map[string]constant.Label{constant.LabelNoDiff.Name: constant.LabelNoDiff},
+			out:    false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			platformClient := platformMock.NewMockClienter(ctrl)
+			platformClient.EXPECT().GetPullRequestLabels(ctx).Return(test.labels, nil)
+			eventHandler := &EventHandler{
+				platform: platformClient,
+			}
+			has, err := eventHandler.hasOutdatedDiffLabel(ctx)
+			assert.Equal(t, test.out, has)
+			assert.Equal(t, test.isError, err != nil)
 		})
 	}
 }

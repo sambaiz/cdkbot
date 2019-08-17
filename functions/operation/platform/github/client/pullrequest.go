@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"strings"
 )
 
@@ -29,6 +30,25 @@ func (c *Client) GetPullRequestBaseBranch(
 	// Trim username from username:branch
 	parts := strings.Split(pr.GetBase().GetLabel(), ":")
 	return parts[len(parts)-1], nil
+}
+
+
+// GetPullRequestLabels gets PR's labels and returns map[label name]constant.Label
+func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error) {
+	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
+	if err != nil {
+		return nil, err
+	}
+	labels := map[string]constant.Label{}
+	for _, label := range pr.Labels {
+		if label == nil {
+			continue
+		}
+		if lb, ok := constant.NameToLabel[*label.Name]; ok {
+			labels[lb.Name] = constant.NameToLabel[lb.Name]
+		}
+	}
+	return labels, nil
 }
 
 func (c *Client) getOpenPullRequestNumbers(

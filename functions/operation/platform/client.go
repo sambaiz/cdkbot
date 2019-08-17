@@ -25,6 +25,7 @@ type Clienter interface {
 	) error
 	GetPullRequestBaseBranch(ctx context.Context) (string, error)
 	GetPullRequestLatestCommitHash(ctx context.Context) (string, error)
+	GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error)
 	SetStatus(
 		ctx context.Context,
 		state constant.State,

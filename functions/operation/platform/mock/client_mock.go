@@ -120,6 +120,21 @@ func (mr *MockClienterMockRecorder) GetPullRequestLatestCommitHash(ctx interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLatestCommitHash", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLatestCommitHash), ctx)
 }
 
+// GetPullRequestLabels mocks base method
+func (m *MockClienter) GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPullRequestLabels", ctx)
+	ret0, _ := ret[0].(map[string]constant.Label)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPullRequestLabels indicates an expected call of GetPullRequestLabels
+func (mr *MockClienterMockRecorder) GetPullRequestLabels(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLabels", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLabels), ctx)
+}
+
 // SetStatus mocks base method
 func (m *MockClienter) SetStatus(ctx context.Context, state constant.State, description string) error {
 	m.ctrl.T.Helper()

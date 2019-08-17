@@ -12,7 +12,6 @@ func (e *EventHandler) CommentCreated(
 	ctx context.Context,
 	userName string,
 	comment string,
-	nameToLabel map[string]constant.Label,
 ) error {
 	cmd := parseCommand(comment)
 	if cmd == nil {
@@ -26,12 +25,14 @@ func (e *EventHandler) CommentCreated(
 		if target == nil {
 			return constant.StateMergeReady, "No targets are matched", nil
 		}
-		if _, ok := nameToLabel[constant.LabelOutdatedDiff.Name]; ok && cmd.action == actionDeploy {
-			if err := e.platform.CreateComment(ctx, "Differences are outdated. Run /diff instead."); err != nil {
-				return constant.StateError, err.Error(), err
+		if cmd.action == actionDeploy {
+			if has, _ := e.hasOutdatedDiffLabel(ctx); has {
+				if err := e.platform.CreateComment(ctx, "Differences are outdated. Run /diff instead."); err != nil {
+					return constant.StateError, err.Error(), err
+				}
+				cmd.action = actionDiff
+				cmd.args = ""
 			}
-			cmd.action = actionDiff
-			cmd.args = ""
 		}
 		var hasDiff bool
 		switch cmd.action {
@@ -40,21 +41,12 @@ func (e *EventHandler) CommentCreated(
 			if err != nil {
 				return constant.StateError, err.Error(), err
 			}
-			if err := e.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
-				return constant.StateError, err.Error(), err
-			}
 		case actionDeploy:
 			if !cfg.IsUserAllowedDeploy(userName) {
 				return constant.StateError, fmt.Sprintf("User %s is not allowed to deploy", userName), nil
 			}
-			if err := e.platform.AddLabel(ctx, constant.LabelDeploying); err != nil {
-				return constant.StateError, err.Error(), err
-			}
 			hasDiff, err = e.doActionDeploy(ctx, cdkPath, cmd.args, target.Contexts)
 			if err != nil {
-				return constant.StateError, err.Error(), err
-			}
-			if err := e.platform.RemoveLabel(ctx, constant.LabelDeploying); err != nil {
 				return constant.StateError, err.Error(), err
 			}
 		default:
@@ -105,6 +97,18 @@ func parseCommand(cmd string) *command {
 	return nil
 }
 
+func (e *EventHandler) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
+	// get labels from not event but API because to get latest one.
+	labels, err := e.platform.GetPullRequestLabels(ctx)
+	if err != nil {
+		return false, err
+	}
+	if _, ok := labels[constant.LabelOutdatedDiff.Name]; ok {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (e *EventHandler) doActionDiff(
 	ctx context.Context,
 	cdkPath string,
@@ -119,6 +123,9 @@ func (e *EventHandler) doActionDiff(
 	); err != nil {
 		return false, err
 	}
+	if err := e.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
+		return false, err
+	}
 	return hasDiff, nil
 }
 
@@ -128,6 +135,9 @@ func (e *EventHandler) doActionDeploy(
 	cmdArgs string,
 	contexts map[string]string,
 ) (bool, error) {
+	if err := e.platform.AddLabel(ctx, constant.LabelDeploying); err != nil {
+		return false, err
+	}
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
 		stacks, err := e.cdk.List(cdkPath, contexts)
@@ -152,6 +162,9 @@ func (e *EventHandler) doActionDeploy(
 		return false, err
 	}
 	if err := e.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
+		return false, err
+	}
+	if err := e.platform.RemoveLabel(ctx, constant.LabelDeploying); err != nil {
 		return false, err
 	}
 	return hasDiff, nil

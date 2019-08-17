@@ -18,7 +18,7 @@ Therefore, if it deploys after merged, incorrect codes can be mixed and one or m
 
 ## Configurations
 
-Put `cdkbot.yml` on the repository root.
+Put `cdkbot.yml` at the repository root.
 
 ```
 cdkRoot: . # CDK directory path from repository root.
@@ -32,7 +32,8 @@ targets:
     contexts:
       env: prd
 deploy_users:
-  # Optional. If not specified, all users can deploy.
+  # Optional. If specified, only these users are allowed to deploy.
+  # If not, all users are allowed to deploy.
   - sambaiz
 ```
 
