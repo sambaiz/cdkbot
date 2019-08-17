@@ -1,5 +1,7 @@
 package constant
 
+import "fmt"
+
 // Label is label settings
 type Label struct {
 	Name        string
@@ -7,22 +9,24 @@ type Label struct {
 	Color       string
 }
 
+const labelPrefix = "cdkbot:"
+
 var (
 	// LabelOutdatedDiff expresses the PR has outdated differences
 	LabelOutdatedDiff = Label{
-		Name:        "cdkbot:outdated diff",
+		Name:        fmt.Sprintf("%soutdated diff", labelPrefix),
 		Description: "Diffs are outdated. Run /diff again.",
 		Color:       "e4e669",
 	}
 	// LabelNoDiff expresses the PR has no differences
 	LabelNoDiff = Label{
-		Name:        "cdkbot:no diffs",
+		Name:        fmt.Sprintf("%sno diffs", labelPrefix),
 		Description: "No diffs. Let's merge!",
 		Color:       "008672",
 	}
 	// LabelDeploying expresses the PR is now being deployed
 	LabelDeploying = Label{
-		Name:        "cdkbot:deploying",
+		Name:        fmt.Sprintf("%sdeploying", labelPrefix),
 		Description: "Now deploying",
 		Color:       "0075ca",
 	}

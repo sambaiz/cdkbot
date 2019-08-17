@@ -41,10 +41,7 @@ func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.
 	}
 	labels := map[string]constant.Label{}
 	for _, label := range pr.Labels {
-		if label == nil {
-			continue
-		}
-		if lb, ok := constant.NameToLabel[*label.Name]; ok {
+		if lb, ok := constant.NameToLabel[label.GetName()]; ok {
 			labels[lb.Name] = constant.NameToLabel[lb.Name]
 		}
 	}

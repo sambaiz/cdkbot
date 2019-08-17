@@ -45,20 +45,22 @@ func (c *Client) RemoveLabel(
 }
 
 func (c *Client) addLabel(ctx context.Context, number int, label constant.Label) error {
-	added, _, err := c.client.Issues.AddLabelsToIssue(ctx, c.owner, c.repo, c.number, []string{label.Name})
-	if len(added) == 1 && added[0].GetDescription() == "" {
-		label, ok := constant.NameToLabel[added[0].GetName()]
-		if !ok {
+	labels, _, err := c.client.Issues.AddLabelsToIssue(ctx, c.owner, c.repo, number, []string{label.Name})
+	if err != nil {
+		return err
+	}
+	for _, lb := range labels {
+		// no need to edit
+		if lb.GetName() == label.Name && lb.GetDescription() == label.Description && lb.GetColor() == label.Color {
 			return nil
 		}
-		_, _, err = c.client.Issues.EditLabel(ctx, c.owner, c.repo, added[0].GetName(), &github.Label{
-			Name:        &[]string{added[0].GetName()}[0],
-			Description: &label.Description,
-			Color:       &label.Color,
-		})
-		if err != nil {
-			return err
-		}
+	}
+	if _, _, err := c.client.Issues.EditLabel(ctx, c.owner, c.repo, label.Name, &github.Label{
+		Name:        &label.Name,
+		Description: &label.Description,
+		Color:       &label.Color,
+	}); err != nil {
+		return err
 	}
 	return nil
 }
