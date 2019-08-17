@@ -31,6 +31,9 @@ targets:
   master:
     contexts:
       env: prd
+deploy_users:
+  # Optional. If not specified, all users can deploy.
+  - sambaiz
 ```
 
 ## Install

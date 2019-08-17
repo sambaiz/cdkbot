@@ -17,19 +17,21 @@ import (
 
 func TestEventHandlerIssueCommentCreated(t *testing.T) {
 	tests := []struct {
-		title         string
-		inComment     string
-		inNameToLabel map[string]constant.Label
-		cfg           config.Config
-		baseBranch    string
-		resultHasDiff bool
-		resultState   constant.State
+		title                  string
+		inUserName             string
+		inComment              string
+		inNameToLabel          map[string]constant.Label
+		cfg                    config.Config
+		baseBranch             string
+		resultHasDiff          bool
+		resultState            constant.State
 		resultStateDescription string
-		isError       bool
+		isError                bool
 	}{
 		{
-			title:     "no targets are matched",
-			inComment: "/deploy TestStack",
+			title:         "no targets are matched",
+			inUserName:    "sambaiz",
+			inComment:     "/deploy TestStack",
 			inNameToLabel: map[string]constant.Label{},
 			cfg: config.Config{
 				CDKRoot: ".",
@@ -37,14 +39,15 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch: "develop",
-			resultHasDiff: false,
-			resultState: constant.StateMergeReady,
+			baseBranch:             "develop",
+			resultHasDiff:          false,
+			resultState:            constant.StateMergeReady,
 			resultStateDescription: "No targets are matched",
 		},
 		{
-			title:     "comment diff and has diffs",
-			inComment: "/diff",
+			title:         "comment diff and has diffs",
+			inUserName:    "sambaiz",
+			inComment:     "/diff",
 			inNameToLabel: map[string]constant.Label{},
 			cfg: config.Config{
 				CDKRoot: ".",
@@ -56,14 +59,15 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:    "develop",
-			resultHasDiff: true,
-			resultState: constant.StateNeedDeploy,
+			baseBranch:             "develop",
+			resultHasDiff:          true,
+			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "Diffs still remain",
 		},
 		{
-			title:     "comment deploy and has no diffs",
-			inComment: "/deploy TestStack",
+			title:         "comment deploy and has no diffs",
+			inUserName:    "sambaiz",
+			inComment:     "/deploy TestStack",
 			inNameToLabel: map[string]constant.Label{},
 			cfg: config.Config{
 				CDKRoot: ".",
@@ -75,24 +79,43 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:    "develop",
-			resultHasDiff: false,
-			resultState: constant.StateMergeReady,
+			baseBranch:             "develop",
+			resultHasDiff:          false,
+			resultState:            constant.StateMergeReady,
 			resultStateDescription: "No diffs. Let's merge!",
 		},
 		{
-			title:     "comment deploy but run diff instead because differences are outdated",
-			inComment: "/deploy TestStack",
+			title:         "comment deploy but user is not allowed to deploy",
+			inUserName:    "sambaiz",
+			inComment:     "/deploy TestStack",
+			inNameToLabel: map[string]constant.Label{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {},
+				},
+				DeployUsers: []string{"foobar"},
+			},
+			baseBranch:             "develop",
+			resultHasDiff:          true,
+			resultState:            constant.StateError,
+			resultStateDescription: "User sambaiz is not allowed to deploy",
+		},
+		{
+			title:         "comment deploy but since differences are outdated so run /diff instead",
+			inUserName:    "sambaiz",
+			inComment:     "/deploy TestStack",
 			inNameToLabel: map[string]constant.Label{constant.LabelOutdatedDiff.Name: constant.LabelOutdatedDiff},
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
 					"develop": {},
 				},
+				DeployUsers: []string{"foobar"},
 			},
-			baseBranch: "develop",
-			resultHasDiff: true,
-			resultState: constant.StateNeedDeploy,
+			baseBranch:             "develop",
+			resultHasDiff:          true,
+			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "Diffs still remain",
 		},
 	}
@@ -100,12 +123,13 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 	constructEventHandlerWithMock := func(
 		ctx context.Context,
 		ctrl *gomock.Controller,
+		userName string,
 		comment string,
 		nameToLabel map[string]constant.Label,
 		cfg config.Config,
 		baseBranch string,
 		resultHasDiff bool,
-		resultState   constant.State,
+		resultState constant.State,
 		resultStateDescription string,
 	) *EventHandler {
 		platformClient := platformMock.NewMockClienter(ctrl)
@@ -153,6 +177,15 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			).Return(nil)
 			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelOutdatedDiff).Return(nil)
 		} else if cmd.action == actionDeploy {
+			if !cfg.IsUserAllowedDeploy(userName) {
+				return &EventHandler{
+					platform: platformClient,
+					git:      gitClient,
+					config:   configClient,
+					cdk:      cdkClient,
+				}
+			}
+
 			platformClient.EXPECT().AddLabel(ctx, constant.LabelDeploying).Return(nil)
 
 			// doActionDeploy()
@@ -190,6 +223,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			eventHandler := constructEventHandlerWithMock(
 				ctx,
 				ctrl,
+				test.inUserName,
 				test.inComment,
 				test.inNameToLabel,
 				test.cfg,
@@ -197,7 +231,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				test.resultHasDiff,
 				test.resultState,
 				test.resultStateDescription)
-			assert.Equal(t, test.isError, eventHandler.CommentCreated(ctx, test.inComment, test.inNameToLabel) != nil)
+			assert.Equal(t, test.isError,
+				eventHandler.CommentCreated(ctx, test.inUserName, test.inComment, test.inNameToLabel) != nil,
+			)
 		})
 	}
 }

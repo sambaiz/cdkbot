@@ -10,6 +10,7 @@ import (
 // CommentCreated handles the event of comment created
 func (e *EventHandler) CommentCreated(
 	ctx context.Context,
+	userName string,
 	comment string,
 	nameToLabel map[string]constant.Label,
 ) error {
@@ -18,7 +19,7 @@ func (e *EventHandler) CommentCreated(
 		return nil
 	}
 	return e.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, _, target, err := e.setup(ctx)
+		cdkPath, cfg, target, err := e.setup(ctx)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -43,6 +44,9 @@ func (e *EventHandler) CommentCreated(
 				return constant.StateError, err.Error(), err
 			}
 		case actionDeploy:
+			if !cfg.IsUserAllowedDeploy(userName) {
+				return constant.StateError, fmt.Sprintf("User %s is not allowed to deploy", userName), nil
+			}
 			if err := e.platform.AddLabel(ctx, constant.LabelDeploying); err != nil {
 				return constant.StateError, err.Error(), err
 			}

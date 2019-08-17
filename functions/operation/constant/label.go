@@ -10,19 +10,19 @@ type Label struct {
 var (
 	// LabelOutdatedDiff expresses the PR has outdated differences
 	LabelOutdatedDiff = Label{
-		Name:        "cdkbot/outdated diff",
+		Name:        "cdkbot:outdated diff",
 		Description: "Diffs are outdated. Run /diff again.",
 		Color:       "e4e669",
 	}
 	// LabelNoDiff expresses the PR has no differences
 	LabelNoDiff = Label{
-		Name:        "cdkbot/no diffs",
+		Name:        "cdkbot:no diffs",
 		Description: "No diffs. Let's merge!",
 		Color:       "008672",
 	}
 	// LabelDeploying expresses the PR is now being deployed
 	LabelDeploying = Label{
-		Name:        "cdkbot/deploying",
+		Name:        "cdkbot:deploying",
 		Description: "Now deploying",
 		Color:       "0075ca",
 	}

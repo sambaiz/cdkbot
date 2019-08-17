@@ -16,8 +16,9 @@ type Reader struct{}
 
 // Config is cdkbot config. Targets keys are branch name.
 type Config struct {
-	CDKRoot string            `yaml:"cdkRoot"`
-	Targets map[string]Target `yaml:"targets"`
+	CDKRoot     string            `yaml:"cdkRoot"`
+	Targets     map[string]Target `yaml:"targets"`
+	DeployUsers []string          `yaml:"deploy_users"`
 }
 
 // Target is cdkbot target
@@ -36,4 +37,16 @@ func (*Reader) Read(path string) (*Config, error) {
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (c *Config) IsUserAllowedDeploy(userName string) bool {
+	if len(c.DeployUsers) == 0 {
+		return true
+	}
+	for _, user := range c.DeployUsers {
+		if user == userName {
+			return true
+		}
+	}
+	return false
 }

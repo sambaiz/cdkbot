@@ -56,7 +56,7 @@ func Handler(
 				ev.GetPullRequest().GetNumber(),
 			),
 			&git.CloneOptions{
-				URL: ev.GetRepo().GetCloneURL(),
+				URL:  ev.GetRepo().GetCloneURL(),
 				Auth: cloneAuth,
 			},
 		)
@@ -74,7 +74,7 @@ func Handler(
 				ev.GetIssue().GetNumber(),
 			),
 			&git.CloneOptions{
-				URL: ev.GetRepo().GetCloneURL(),
+				URL:  ev.GetRepo().GetCloneURL(),
 				Auth: cloneAuth,
 			},
 		)
@@ -91,6 +91,7 @@ func Handler(
 			}
 			err = eventHandler.CommentCreated(
 				ctx,
+				ev.GetSender().GetName(),
 				ev.GetComment().GetBody(),
 				nameToLabel)
 		}

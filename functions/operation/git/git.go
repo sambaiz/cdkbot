@@ -13,7 +13,7 @@ type Clienter interface {
 }
 
 // Client is git client
-type Client struct{
+type Client struct {
 	cloneOptions *git.CloneOptions
 }
 
@@ -23,7 +23,6 @@ func NewClient(cloneOptions *git.CloneOptions) *Client {
 		cloneOptions: cloneOptions,
 	}
 }
-
 
 // Clone a git repository
 func (c *Client) Clone(path string, hash *string) error {

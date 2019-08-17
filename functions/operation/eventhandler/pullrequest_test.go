@@ -17,13 +17,13 @@ import (
 
 func TestEventHandlerPullRequestOpened(t *testing.T) {
 	tests := []struct {
-		title         string
-		cfg           config.Config
-		baseBranch    string
-		resultHasDiff bool
-		resultState   constant.State
+		title                  string
+		cfg                    config.Config
+		baseBranch             string
+		resultHasDiff          bool
+		resultState            constant.State
 		resultStateDescription string
-		isError       bool
+		isError                bool
 	}{
 		{
 			title: "no targets are matched",
@@ -33,9 +33,9 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch: "develop",
-			resultHasDiff: false,
-			resultState: constant.StateMergeReady,
+			baseBranch:             "develop",
+			resultHasDiff:          false,
+			resultState:            constant.StateMergeReady,
 			resultStateDescription: "No targets are matched",
 		},
 		{
@@ -50,9 +50,9 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:    "develop",
-			resultHasDiff: true,
-			resultState: constant.StateNeedDeploy,
+			baseBranch:             "develop",
+			resultHasDiff:          true,
+			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "There are differences",
 		},
 	}

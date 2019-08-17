@@ -30,6 +30,7 @@ func TestReaderRead(t *testing.T) {
 						},
 					},
 				},
+				DeployUsers: []string{"sambaiz"},
 			},
 		},
 		{
@@ -54,4 +55,20 @@ func TestReaderRead(t *testing.T) {
 			assert.Equal(t, test.out, config)
 		})
 	}
+}
+
+func TestConfigIsIncludedInDeployUsers(t *testing.T) {
+	t.Run("no deploy_users are specified", func(t *testing.T) {
+		cfg := Config{
+			DeployUsers: nil,
+		}
+		assert.True(t, cfg.IsUserAllowedDeploy("foobar"))
+	})
+	t.Run("deploy_users are specified", func(t *testing.T) {
+		cfg := Config{
+			DeployUsers: []string{"sambaiz"},
+		}
+		assert.True(t, cfg.IsUserAllowedDeploy("sambaiz"))
+		assert.False(t, cfg.IsUserAllowedDeploy("foobar"))
+	})
 }
