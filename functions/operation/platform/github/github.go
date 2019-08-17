@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"github.com/sambaiz/cdkbot/functions/operation/eventhandler"
 	"github.com/sambaiz/cdkbot/functions/operation/platform/github/client"
 	"gopkg.in/src-d/go-git.v4"
@@ -79,7 +80,19 @@ func Handler(
 		)
 		switch ev.GetAction() {
 		case "created":
-			err = eventHandler.CommentCreated(ctx, ev.GetComment().GetBody())
+			nameToLabel := map[string]constant.Label{}
+			for _, label := range ev.GetIssue().Labels {
+				if label.Name == nil {
+					continue
+				}
+				if lb, ok := constant.NameToLabel[*label.Name]; ok {
+					nameToLabel[lb.Name] = constant.NameToLabel[lb.Name]
+				}
+			}
+			err = eventHandler.CommentCreated(
+				ctx,
+				ev.GetComment().GetBody(),
+				nameToLabel)
 		}
 	}
 	if err != nil {

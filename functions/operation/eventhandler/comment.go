@@ -11,6 +11,7 @@ import (
 func (e *EventHandler) CommentCreated(
 	ctx context.Context,
 	comment string,
+	nameToLabel map[string]constant.Label,
 ) error {
 	cmd := parseCommand(comment)
 	if cmd == nil {
@@ -23,6 +24,13 @@ func (e *EventHandler) CommentCreated(
 		}
 		if target == nil {
 			return constant.StateMergeReady, "No targets are matched", nil
+		}
+		if _, ok := nameToLabel[constant.LabelOutdatedDiff.Name]; ok && cmd.action == actionDeploy {
+			if err := e.platform.CreateComment(ctx, "Differences are outdated. Run /diff instead."); err != nil {
+				return constant.StateError, err.Error(), err
+			}
+			cmd.action = actionDiff
+			cmd.args = ""
 		}
 		var hasDiff bool
 		switch cmd.action {

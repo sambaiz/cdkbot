@@ -42,7 +42,6 @@ func TestEventHandlerSetup(t *testing.T) {
 	configClient := configMock.NewMockReaderer(ctrl)
 	cdkClient := cdkMock.NewMockClienter(ctrl)
 
-	cloneURL := "https://github.com/sambaiz/cdkbot"
 	baseBranch := "develop"
 	cfg := config.Config{
 		CDKRoot: ".",
@@ -56,7 +55,6 @@ func TestEventHandlerSetup(t *testing.T) {
 		gitClient,
 		configClient,
 		cdkClient,
-		cloneURL,
 		cfg,
 		baseBranch,
 	)
@@ -79,7 +77,6 @@ func constructSetupMock(
 	gitClient *gitMock.MockClienter,
 	configClient *configMock.MockReaderer,
 	cdkClient *cdkMock.MockClienter,
-	cloneURL string,
 	cfg config.Config,
 	baseBranch string,
 ) {

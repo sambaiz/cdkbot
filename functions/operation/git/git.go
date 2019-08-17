@@ -17,6 +17,7 @@ type Client struct{
 	cloneOptions *git.CloneOptions
 }
 
+// NewClient creates git client
 func NewClient(cloneOptions *git.CloneOptions) *Client {
 	return &Client{
 		cloneOptions: cloneOptions,

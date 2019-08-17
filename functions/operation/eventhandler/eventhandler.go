@@ -18,8 +18,9 @@ type EventHandlerer interface {
 		ctx context.Context,
 		cloneURL string,
 		comment string,
+		nameToLabel map[string]constant.Label,
 	) error
-	PullRequestOpened(ctx context.Context, cloneURL string) error
+	PullRequestOpened(ctx context.Context) error
 }
 
 // EventHandler handles events
