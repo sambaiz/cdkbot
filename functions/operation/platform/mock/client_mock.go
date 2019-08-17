@@ -5,10 +5,10 @@
 package mock
 
 import (
-	"context"
-	"github.com/golang/mock/gomock"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-	"reflect"
+	context "context"
+	gomock "github.com/golang/mock/gomock"
+	constant "github.com/sambaiz/cdkbot/functions/operation/constant"
+	reflect "reflect"
 )
 
 // MockClienter is a mock of Clienter interface

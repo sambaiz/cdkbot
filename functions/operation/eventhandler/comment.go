@@ -135,9 +135,6 @@ func (e *EventHandler) doActionDeploy(
 	cmdArgs string,
 	contexts map[string]string,
 ) (bool, error) {
-	if err := e.platform.AddLabel(ctx, constant.LabelDeploying); err != nil {
-		return false, err
-	}
 	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
 	if len(args) == 0 {
 		stacks, err := e.cdk.List(cdkPath, contexts)
@@ -162,9 +159,6 @@ func (e *EventHandler) doActionDeploy(
 		return false, err
 	}
 	if err := e.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
-		return false, err
-	}
-	if err := e.platform.RemoveLabel(ctx, constant.LabelDeploying); err != nil {
 		return false, err
 	}
 	return hasDiff, nil

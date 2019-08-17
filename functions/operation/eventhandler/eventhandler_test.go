@@ -22,7 +22,9 @@ func TestEventHandlerUpdateStatus(t *testing.T) {
 	resultState := constant.StateMergeReady
 	statusDescription := "description"
 	platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
+	platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
 	platformClient.EXPECT().SetStatus(ctx, resultState, statusDescription).Return(nil)
+	platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 	eventHandler := EventHandler{
 		platform: platformClient,
 	}

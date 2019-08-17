@@ -135,7 +135,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
+		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
 		platformClient.EXPECT().SetStatus(ctx, resultState, resultStateDescription).Return(nil)
+		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
 			ctx,
@@ -189,7 +191,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			}
 
 			// doActionDeploy()
-			platformClient.EXPECT().AddLabel(ctx, constant.LabelDeploying).Return(nil)
 			result := "result"
 			cdkClient.EXPECT().Deploy(cdkPath, cmd.args, target.Contexts).Return(result, nil)
 			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
@@ -198,7 +199,6 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
 			).Return(nil)
 			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
-			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelDeploying).Return(nil)
 		}
 
 		if resultHasDiff {

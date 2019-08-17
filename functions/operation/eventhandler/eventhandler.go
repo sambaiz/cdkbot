@@ -37,6 +37,9 @@ func (e *EventHandler) updateStatus(
 	if err := e.platform.SetStatus(ctx, constant.StateRunning, ""); err != nil {
 		return err
 	}
+	if err := e.platform.AddLabel(ctx, constant.LabelRunning); err != nil {
+		return err
+	}
 	state, statusDescription, err := f()
 	defer func() {
 		e.platform.SetStatus(
@@ -44,6 +47,7 @@ func (e *EventHandler) updateStatus(
 			state,
 			statusDescription,
 		)
+		e.platform.RemoveLabel(ctx, constant.LabelRunning)
 	}()
 	if err != nil {
 		return err

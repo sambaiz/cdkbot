@@ -73,7 +73,9 @@ func TestEventHandlerPullRequestOpened(t *testing.T) {
 
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
+		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
 		platformClient.EXPECT().SetStatus(ctx, resultState, resultStateDescription).Return(nil)
+		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
 			ctx,
