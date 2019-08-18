@@ -81,7 +81,7 @@ func Handler(
 		case "created":
 			err = eventHandler.CommentCreated(
 				ctx,
-				ev.GetSender().GetName(),
+				ev.GetSender().GetLogin(),
 				ev.GetComment().GetBody())
 		}
 	}
