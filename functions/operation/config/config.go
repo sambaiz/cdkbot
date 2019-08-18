@@ -18,7 +18,7 @@ type Reader struct{}
 type Config struct {
 	CDKRoot     string            `yaml:"cdkRoot"`
 	Targets     map[string]Target `yaml:"targets"`
-	DeployUsers []string          `yaml:"deploy_users"`
+	DeployUsers []string          `yaml:"deployUsers"`
 }
 
 // Target is cdkbot target

@@ -1,6 +1,6 @@
 # cdkbot
 
-cdkbot is an application for Pull Request based AWS CDK operation.
+cdkbot offers Pull Request based AWS CDK operation.
 Currently only GitHub is supported.
 
 ## Operations
@@ -11,12 +11,47 @@ If no stacks are specified, all stacks are passed.
 - `/diff [stack1 stack2 ...]`: cdk diff
 - `/deploy [stack1 stack2 ...]`: cdk deploy
 
-### FYI: Why deploys before merged, not after merged?
+When run /deploy on a PR,
+`cdkbot:outdated diffs` label is added to other PRs. 
+To run /deploy on those, 
+it is needed to run /diff again to see the latest differences.
 
-cdk deploy fails unexpectedly due to runtime errors of CF template and may need to be fixed.
-Therefore, if it deploys after merged, incorrect codes can be mixed and one or more PRs must be opened to fix, which flagment changes. That's why run commands on PR before merged.
+### FYI: Why deploys before merging, not after merging?
 
-## Configurations
+cdk deploy fails unexpectedly due to runtime errors of CFn template and may need to be fixed again and again.
+Therefore, if the flow that deploys after merging is adopted, 
+broken codes can be merged and surplus PRs must be opened to fix, which flagment changes. 
+Deploying before merging is to avoid these, 
+and in order to avoid to deploy old stacks, 
+it sets the number of concurrent executions to 1 and 
+forces to see latest differences by `cdkbot:outdated diffs` label.
+
+## Install & Settings
+
+### Install
+
+Install from [Serverless Application Repository](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot)
+with following parameters.
+
+- GitHubUserName & GitHubAccessToken
+
+Token can be generated at `Settings/Developer settings`.
+repo and write:discussion scopes are required.
+
+- GitHubWebhookSecret: Generate a random string.
+
+- Platform: Only github.
+
+### Repository webhook
+
+Add a webhook at repository's settings. 
+
+- Payload URL: See CloudFormation Stack output
+- Content type: application/json 
+- Secret: same value of GitHubWebhookSecret
+- Event trigger: Issue comments and Pull requests
+
+### cdkbot.yml
 
 Put `cdkbot.yml` at the repository root.
 
@@ -31,14 +66,9 @@ targets:
   master:
     contexts:
       env: prd
-deploy_users:
+deployUsers:
   # Optional. If specified, only these users are allowed to deploy.
   # If not, all users are allowed to deploy.
   - sambaiz
 ```
-
-## Install
-
-WIP
-
 

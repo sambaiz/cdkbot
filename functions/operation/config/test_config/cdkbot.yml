@@ -6,5 +6,5 @@ targets:
   master:
     contexts:
       env: prd
-deploy_users:
+deployUsers:
   - sambaiz

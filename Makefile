@@ -13,10 +13,10 @@ build:
 	docker run cdkbot-npmbin cat /tmp/npm-layer.zip > npm-layer.zip && unzip npm-layer.zip -d npm-layer && rm npm-layer.zip
 
 package: build
-	sam package --output-template-file packaged.yaml --s3-bucket cdkbot
+	sam package --output-template-file packaged.yaml --s3-bucket cdkbot --region us-east-1
 
 publish: package
-	sam publish -t packaged.yaml
+	sam publish -t packaged.yaml --region us-east-1
 
 install-tools:
 	go get -u golang.org/x/lint/golint

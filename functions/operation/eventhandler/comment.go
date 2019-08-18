@@ -143,6 +143,9 @@ func (e *EventHandler) doActionDeploy(
 		}
 		args = strings.Join(stacks, " ")
 	}
+	if err := e.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
+		return false, err
+	}
 	result, err := e.cdk.Deploy(cdkPath, args, contexts)
 	if err != nil {
 		return false, err
@@ -156,9 +159,6 @@ func (e *EventHandler) doActionDeploy(
 		ctx,
 		fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", args, result, message),
 	); err != nil {
-		return false, err
-	}
-	if err := e.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
 		return false, err
 	}
 	return hasDiff, nil
