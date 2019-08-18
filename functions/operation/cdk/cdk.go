@@ -41,7 +41,7 @@ func (*Client) Setup(repoPath string) error {
 func (*Client) List(repoPath string, contexts map[string]string) ([]string, error) {
 	args := []string{"run", "cdk", "--", "list"}
 	for k, v := range contexts {
-		args = append(args, fmt.Sprintf("-c %s=%s", k, v))
+		args = append(args, "-c", fmt.Sprintf("%s=%s", k, v))
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
@@ -74,9 +74,9 @@ func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) 
 
 // Deploy stack
 func (*Client) Deploy(repoPath string, stacks string, contexts map[string]string) (string, error) {
-	args := []string{"run", "cdk", "--", "deploy", "--require-approval", "never", stacks, "-c"}
+	args := []string{"run", "cdk", "--", "deploy", "--require-approval", "never", stacks}
 	for k, v := range contexts {
-		args = append(args, fmt.Sprintf("%s=%s", k, v))
+		args = append(args, "-c", fmt.Sprintf("%s=%s", k, v))
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
