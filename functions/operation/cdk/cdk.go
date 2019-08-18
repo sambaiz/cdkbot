@@ -39,9 +39,9 @@ func (*Client) Setup(repoPath string) error {
 
 // List stack
 func (*Client) List(repoPath string, contexts map[string]string) ([]string, error) {
-	args := []string{"run", "cdk", "--", "list", "-c"}
+	args := []string{"run", "cdk", "--", "list"}
 	for k, v := range contexts {
-		args = append(args, fmt.Sprintf("%s=%s", k, v))
+		args = append(args, fmt.Sprintf("-c %s=%s", k, v))
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
@@ -55,9 +55,9 @@ func (*Client) List(repoPath string, contexts map[string]string) ([]string, erro
 
 // Diff stack and returns (diff, hasDiff)
 func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) (string, bool) {
-	args := []string{"run", "cdk", "--", "diff", stacks, "-c"}
+	args := []string{"run", "cdk", "--", "diff", stacks}
 	for k, v := range contexts {
-		args = append(args, fmt.Sprintf("%s=%s", k, v))
+		args = append(args, "-c", fmt.Sprintf("%s=%s", k, v))
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath

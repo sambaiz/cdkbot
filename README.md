@@ -45,7 +45,7 @@ repo and write:discussion scopes are required.
 - GitHubWebhookSecret: Generate a random string.
 - Platform: Only github.
 
-### Repository webhook
+### Repository settings
 
 Add a webhook at repository's settings. 
 
@@ -53,6 +53,9 @@ Add a webhook at repository's settings.
 - Content type: application/json 
 - Secret: same value of GitHubWebhookSecret
 - Event trigger: Issue comments and Pull requests
+
+After the first run, enable "Require status checks to pass before merging" 
+in the branch protection rule (Recommended)
 
 ### cdkbot.yml
 
