@@ -11,11 +11,15 @@ If no stacks are specified, all stacks are passed.
 - `/diff [stack1 stack2 ...]`: cdk diff
 - `/deploy [stack1 stack2 ...]`: cdk deploy
 
+![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
+
 After running /deploy, 
 PR is merged automatically if there is no changes anymore, 
 and `cdkbot:outdated diffs` label is added to other PRs. 
 To run /deploy on those, 
 it is needed to run /diff again to see the latest differences.
+
+![oudated diffs label](./doc-assets/outdated-diffs.png)
 
 ### FYI: Why deploys before merging PR, not after merging?
 
