@@ -11,20 +11,24 @@ If no stacks are specified, all stacks are passed.
 - `/diff [stack1 stack2 ...]`: cdk diff
 - `/deploy [stack1 stack2 ...]`: cdk deploy
 
-When run /deploy on a PR,
-`cdkbot:outdated diffs` label is added to other PRs. 
+After running /deploy, 
+PR is merged automatically if there is no changes anymore, 
+and `cdkbot:outdated diffs` label is added to other PRs. 
 To run /deploy on those, 
 it is needed to run /diff again to see the latest differences.
 
-### FYI: Why deploys before merging, not after merging?
+### FYI: Why deploys before merging PR, not after merging?
 
 cdk deploy fails unexpectedly due to runtime errors of CFn template and may need to be fixed again and again.
 Therefore, if the flow that deploys after merging is adopted, 
 broken codes can be merged and surplus PRs must be opened to fix, which flagment changes. 
-Deploying before merging is to avoid these, 
-and in order to avoid to deploy old stacks, 
-it sets the number of concurrent executions to 1 and 
-forces to see latest differences by `cdkbot:outdated diffs` label.
+
+Deploying before merging has the advantage of avoiding these 
+but also has the problem that old stack may be deployed.
+In order to prevent this, cdkbot takes measures these:
+
+- merges deployed PR automatically
+- sets the number of concurrent executions to 1 and forces to see latest differences by `cdkbot:outdated diffs` label.
 
 ## Install & Settings
 
@@ -39,7 +43,6 @@ Token can be generated at `Settings/Developer settings`.
 repo and write:discussion scopes are required.
 
 - GitHubWebhookSecret: Generate a random string.
-
 - Platform: Only github.
 
 ### Repository webhook

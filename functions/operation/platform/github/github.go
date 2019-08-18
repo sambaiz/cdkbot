@@ -15,17 +15,17 @@ import (
 	goGitHttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
-var (
-	gitHubWebhookSecret = os.Getenv("GITHUB_WEBHOOK_SECRET")
-)
-
 // Handler handles GitHub webhook
 func Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 	logger *zap.Logger,
 ) (events.APIGatewayProxyResponse, error) {
-	if err := goGitHub.ValidateSignature(req.Headers["X-Hub-Signature"], []byte(req.Body), []byte(gitHubWebhookSecret)); err != nil {
+	if err := goGitHub.ValidateSignature(
+		req.Headers["X-Hub-Signature"],
+		[]byte(req.Body),
+		[]byte(os.Getenv("GITHUB_WEBHOOK_SECRET")),
+	); err != nil {
 		logger.Info("Signature is invalid", zap.Error(err))
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
@@ -86,7 +86,7 @@ func Handler(
 		}
 	}
 	if err != nil {
-		logger.Error("Failed to event an event", zap.Error(err))
+		logger.Error("failed to handle an event", zap.Error(err))
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusInternalServerError,
 		}, err

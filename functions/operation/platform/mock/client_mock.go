@@ -135,6 +135,20 @@ func (mr *MockClienterMockRecorder) GetPullRequestLabels(ctx interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLabels", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLabels), ctx)
 }
 
+// MergePullRequest mocks base method
+func (m *MockClienter) MergePullRequest(ctx context.Context, message string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MergePullRequest", ctx, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MergePullRequest indicates an expected call of MergePullRequest
+func (mr *MockClienterMockRecorder) MergePullRequest(ctx, message interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergePullRequest", reflect.TypeOf((*MockClienter)(nil).MergePullRequest), ctx, message)
+}
+
 // SetStatus mocks base method
 func (m *MockClienter) SetStatus(ctx context.Context, state constant.State, description string) error {
 	m.ctrl.T.Helper()

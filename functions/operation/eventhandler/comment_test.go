@@ -199,6 +199,9 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 				ctx,
 				fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
 			).Return(nil)
+			if !resultHasDiff {
+				platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)
+			}
 		}
 
 		if resultHasDiff {

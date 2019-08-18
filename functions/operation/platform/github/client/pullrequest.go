@@ -32,7 +32,6 @@ func (c *Client) GetPullRequestBaseBranch(
 	return parts[len(parts)-1], nil
 }
 
-
 // GetPullRequestLabels gets PR's labels and returns map[label name]constant.Label
 func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error) {
 	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
@@ -46,6 +45,12 @@ func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.
 		}
 	}
 	return labels, nil
+}
+
+// MergePullRequest merges PR
+func (c *Client) MergePullRequest(ctx context.Context, message string) error {
+	_, _, err := c.client.PullRequests.Merge(ctx, c.owner, c.repo, c.number, message, nil)
+	return err
 }
 
 func (c *Client) getOpenPullRequestNumbers(

@@ -161,5 +161,16 @@ func (e *EventHandler) doActionDeploy(
 	); err != nil {
 		return false, err
 	}
+	if !hasDiff {
+		if err := e.platform.MergePullRequest(ctx, "automatically merged by cdkbot"); err != nil {
+			if err := e.platform.CreateComment(
+				ctx,
+				fmt.Sprintf("cdkbot tried to merge but failed: %s", err.Error()),
+			); err != nil {
+				return false, err
+			}
+		}
+	}
+
 	return hasDiff, nil
 }

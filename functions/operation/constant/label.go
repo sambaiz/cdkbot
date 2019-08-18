@@ -34,6 +34,6 @@ var (
 	NameToLabel = map[string]Label{
 		LabelOutdatedDiff.Name: LabelOutdatedDiff,
 		LabelNoDiff.Name:       LabelNoDiff,
-		LabelRunning.Name:    LabelRunning,
+		LabelRunning.Name:      LabelRunning,
 	}
 )
