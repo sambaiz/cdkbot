@@ -5,10 +5,20 @@ jobs:
       - image: circleci/golang:1.12
     environment:
       GO111MODULE: 'on'
+      GOPATH: /go
     working_directory: /go/src/github.com/sambaiz/cdkbot
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - gomod-cache-v1-{{ checksum "go.sum" }}
+            - gomod-cache-v1-
       - run: make install-tools
       - run: make lint
       - setup_remote_docker
       - run: make test
+      - save_cache:
+          key: gomod-cache-v1-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg/mod/cache
+      - run: make install-tools
