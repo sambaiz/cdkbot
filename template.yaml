@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Pull Request based AWS CDK operation
+  Offers Pull Request based AWS CDK operation
 
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: cdkbot
-    Description: Pull Request based AWS CDK operation
+    Description: Offers Pull Request based AWS CDK operation
     Author: sambaiz
     SpdxLicenseId: Apache-2.0
     LicenseUrl: LICENSE

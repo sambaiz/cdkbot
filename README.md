@@ -11,11 +11,15 @@ If no stacks are specified, all stacks are passed.
 - `/diff [stack1 stack2 ...]`: cdk diff
 - `/deploy [stack1 stack2 ...]`: cdk deploy
 
+![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
+
 After running /deploy, 
 PR is merged automatically if there is no changes anymore, 
 and `cdkbot:outdated diffs` label is added to other PRs. 
 To run /deploy on those, 
 it is needed to run /diff again to see the latest differences.
+
+![oudated diffs label](./doc-assets/outdated-diffs.png)
 
 ### FYI: Why deploys before merging PR, not after merging?
 
@@ -45,7 +49,7 @@ repo and write:discussion scopes are required.
 - GitHubWebhookSecret: Generate a random string.
 - Platform: Only github.
 
-### Repository webhook
+### Repository settings
 
 Add a webhook at repository's settings. 
 
@@ -53,6 +57,9 @@ Add a webhook at repository's settings.
 - Content type: application/json 
 - Secret: same value of GitHubWebhookSecret
 - Event trigger: Issue comments and Pull requests
+
+After the first run, enable "Require status checks to pass before merging" 
+in the branch protection rule (Recommended)
 
 ### cdkbot.yml
 
