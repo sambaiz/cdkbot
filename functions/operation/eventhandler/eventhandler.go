@@ -62,7 +62,15 @@ func (e *EventHandler) setup(ctx context.Context) (string, *config.Config, *conf
 	if err != nil {
 		return "", nil, nil, err
 	}
-	if err := e.git.Clone(clonePath, &hash); err != nil {
+	baseBranch, err := e.platform.GetPullRequestBaseBranch(ctx)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	workTree, err := e.git.Clone(clonePath, &hash)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	if err := e.git.Merge(workTree, baseBranch); err != nil {
 		return "", nil, nil, err
 	}
 
@@ -71,10 +79,6 @@ func (e *EventHandler) setup(ctx context.Context) (string, *config.Config, *conf
 		return "", nil, nil, err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-	baseBranch, err := e.platform.GetPullRequestBaseBranch(ctx)
-	if err != nil {
-		return "", nil, nil, err
-	}
 	target, ok := cfg.Targets[baseBranch]
 	if !ok {
 		return cdkPath, cfg, nil, nil

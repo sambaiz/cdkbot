@@ -10,9 +10,10 @@ import (
 
 func TestClientClone(t *testing.T) {
 	hash := "334706a61eb25c944efbf76074e7d48ea9948b9a"
-	err := NewClient(&git.CloneOptions{
+	client := NewClient(&git.CloneOptions{
 		URL: "https://github.com/sambaiz/cdkbot",
-	}).Clone("/tmp/cdkbot", &hash)
+	})
+	_, err := client.Clone("/tmp/cdkbot", &hash)
 	assert.Nil(t, err)
 	out, err := exec.Command("ls", "/tmp/cdkbot/README.md").Output()
 	assert.Nil(t, err)

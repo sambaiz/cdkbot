@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"gopkg.in/src-d/go-git.v4"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -84,9 +85,11 @@ func constructSetupMock(
 ) {
 	hash := "hash"
 	platformClient.EXPECT().GetPullRequestLatestCommitHash(ctx).Return(hash, nil)
-	gitClient.EXPECT().Clone(clonePath, &hash).Return(nil)
-	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 	platformClient.EXPECT().GetPullRequestBaseBranch(ctx).Return(baseBranch, nil)
+	workTree := &git.Worktree{}
+	gitClient.EXPECT().Clone(clonePath, &hash).Return(workTree, nil)
+	gitClient.EXPECT().Merge(workTree, baseBranch).Return(nil)
+	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 	_, ok := cfg.Targets[baseBranch]
 	if !ok {
 		return
