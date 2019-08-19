@@ -37,7 +37,7 @@ func (e *EventHandler) CommentCreated(
 		var hasDiff bool
 		switch cmd.action {
 		case actionDiff:
-			hasDiff, err = e.doActionDiff(ctx, cdkPath, cmd.args, target.Contexts)
+			hasDiff, err = e.doActionDiff(ctx, cdkPath, target.Contexts)
 			if err != nil {
 				return constant.StateError, err.Error(), err
 			}
@@ -45,7 +45,7 @@ func (e *EventHandler) CommentCreated(
 			if !cfg.IsUserAllowedDeploy(userName) {
 				return constant.StateError, fmt.Sprintf("User %s is not allowed to deploy", userName), nil
 			}
-			hasDiff, err = e.doActionDeploy(ctx, cdkPath, cmd.args, target.Contexts)
+			hasDiff, err = e.doActionDeploy(ctx, cdkPath, target.Contexts)
 			if err != nil {
 				return constant.StateError, err.Error(), err
 			}
@@ -112,14 +112,12 @@ func (e *EventHandler) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
 func (e *EventHandler) doActionDiff(
 	ctx context.Context,
 	cdkPath string,
-	cmdArgs string,
 	contexts map[string]string,
 ) (bool, error) {
-	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
-	diff, hasDiff := e.cdk.Diff(cdkPath, args, contexts)
+	diff, hasDiff := e.cdk.Diff(cdkPath, "", contexts)
 	if err := e.platform.CreateComment(
 		ctx,
-		fmt.Sprintf("### cdk diff %s\n```\n%s\n```", args, diff),
+		fmt.Sprintf("### cdk diff\n```\n%s\n```", diff),
 	); err != nil {
 		return false, err
 	}
@@ -132,21 +130,16 @@ func (e *EventHandler) doActionDiff(
 func (e *EventHandler) doActionDeploy(
 	ctx context.Context,
 	cdkPath string,
-	cmdArgs string,
 	contexts map[string]string,
 ) (bool, error) {
-	args := strings.TrimSpace(strings.Replace(cmdArgs, "\n", " ", -1))
-	if len(args) == 0 {
-		stacks, err := e.cdk.List(cdkPath, contexts)
-		if err != nil {
-			return false, err
-		}
-		args = strings.Join(stacks, " ")
-	}
 	if err := e.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
 		return false, err
 	}
-	result, err := e.cdk.Deploy(cdkPath, args, contexts)
+	stacks, err := e.cdk.List(cdkPath, contexts)
+	if err != nil {
+		return false, err
+	}
+	result, err := e.cdk.Deploy(cdkPath, strings.Join(stacks, " "), contexts)
 	if err != nil {
 		return false, err
 	}
@@ -157,7 +150,7 @@ func (e *EventHandler) doActionDeploy(
 	}
 	if err := e.platform.CreateComment(
 		ctx,
-		fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", args, result, message),
+		fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message),
 	); err != nil {
 		return false, err
 	}
