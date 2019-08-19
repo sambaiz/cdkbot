@@ -1,6 +1,6 @@
 # cdkbot
 
-cdkbot offers Pull Request based AWS CDK operation.
+cdkbot offers AWS CDK operation on Pull Request.
 Currently only GitHub is supported.
 
 ## Operations
@@ -14,7 +14,7 @@ If no stacks are specified, all stacks are passed.
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 
 After running `/deploy`, 
-PR is merged automatically if there is no changes anymore, 
+PR is merged automatically if there is no differences anymore, 
 and `cdkbot:outdated diffs` label is added to other PRs. 
 To run `/deploy` on those, 
 it is needed to run `/diff` again to see the latest differences.
