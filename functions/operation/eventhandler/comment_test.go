@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -31,7 +32,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		{
 			title:      "no targets are matched",
 			inUserName: "sambaiz",
-			inComment:  "/deploy TestStack",
+			inComment:  "/deploy",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -65,7 +66,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		{
 			title:      "comment deploy and has no diffs",
 			inUserName: "sambaiz",
-			inComment:  "/deploy TestStack",
+			inComment:  "/deploy",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -84,7 +85,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		{
 			title:      "comment deploy but user is not allowed to deploy",
 			inUserName: "sambaiz",
-			inComment:  "/deploy TestStack",
+			inComment:  "/deploy",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -100,7 +101,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		{
 			title:      "comment deploy but since differences are outdated so run /diff instead",
 			inUserName: "sambaiz",
-			inComment:  "/deploy TestStack",
+			inComment:  "/deploy",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -174,10 +175,10 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 		if cmd.action == actionDiff {
 			// doActionDiff()
 			result := "result"
-			cdkClient.EXPECT().Diff(cdkPath, cmd.args, target.Contexts).Return(result, resultHasDiff)
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff)
 			platformClient.EXPECT().CreateComment(
 				ctx,
-				fmt.Sprintf("### cdk diff %s\n```\n%s\n```", cmd.args, result),
+				fmt.Sprintf("### cdk diff\n```\n%s\n```", result),
 			).Return(nil)
 			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelOutdatedDiff).Return(nil)
 		} else if cmd.action == actionDeploy {
@@ -192,12 +193,14 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 
 			// doActionDeploy()
 			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
+			stacks := []string{"Stack1 Stack2"}
+			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
 			result := "result"
-			cdkClient.EXPECT().Deploy(cdkPath, cmd.args, target.Contexts).Return(result, nil)
-			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
+			cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
+			cdkClient.EXPECT().Diff(cdkPath, "" ,target.Contexts).Return("", resultHasDiff)
 			platformClient.EXPECT().CreateComment(
 				ctx,
-				fmt.Sprintf("### cdk deploy %s\n```\n%s\n```\n%s", cmd.args, result, "All stacks have been deployed :tada:"),
+				fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, "All stacks have been deployed :tada:"),
 			).Return(nil)
 			if !resultHasDiff {
 				platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)

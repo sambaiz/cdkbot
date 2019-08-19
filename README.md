@@ -1,15 +1,14 @@
 # cdkbot
 
-cdkbot offers AWS CDK operation on Pull Request.
+cdkbot offers AWS CDK operations on Pull Request.
 Currently only GitHub is supported.
 
 ## Operations
 
 Following commands are runnable by PR comments. 
-If no stacks are specified, all stacks are passed.
 
-- `/diff [stack1 stack2 ...]`: cdk diff
-- `/deploy [stack1 stack2 ...]`: cdk deploy
+- `/diff`: cdk diff all stacks
+- `/deploy`: cdk deploy all stacks
 
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 
