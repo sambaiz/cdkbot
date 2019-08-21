@@ -51,7 +51,7 @@ func (c *Client) Merge(path, branch string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git merge failed: %s", err.Error())
 	}
-	// use original cdkbot.yml
+	// refer to the original cdkbot.yml
 	cmd = exec.Command("git", "checkout", branch, "cdkbot.yml")
 	cmd.Dir = path
 	if err := cmd.Run(); err != nil {

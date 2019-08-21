@@ -63,7 +63,8 @@ in the branch protection rule to prevent merging before deploying (Recommended)
 ### cdkbot.yml
 
 Put `cdkbot.yml` at the repository root. 
-cdkbot refer to the base branch so it's needed to be merged to apply the changes.
+cdkbot refer to the original for security and authority reasons 
+so it's needed to be merged to apply the changes.
 
 ```
 cdkRoot: . # CDK directory path from repository root.
