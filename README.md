@@ -37,8 +37,8 @@ In order to prevent this, cdkbot takes measures these:
 
 ### Install
 
-Install from [Serverless Application Repository](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot)
-with following parameters.
+Install from [Serverless Application Repository](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
+or `make deploy Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
 
 - GitHubUserName & GitHubAccessToken
 

@@ -6,7 +6,6 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	go_git_v4 "gopkg.in/src-d/go-git.v4"
 	reflect "reflect"
 )
 
@@ -34,12 +33,11 @@ func (m *MockClienter) EXPECT() *MockClienterMockRecorder {
 }
 
 // Clone mocks base method
-func (m *MockClienter) Clone(path string, hash *string) (*go_git_v4.Worktree, error) {
+func (m *MockClienter) Clone(path string, hash *string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Clone", path, hash)
-	ret0, _ := ret[0].(*go_git_v4.Worktree)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Clone indicates an expected call of Clone
@@ -49,15 +47,15 @@ func (mr *MockClienterMockRecorder) Clone(path, hash interface{}) *gomock.Call {
 }
 
 // Merge mocks base method
-func (m *MockClienter) Merge(workTree *go_git_v4.Worktree, branch string) error {
+func (m *MockClienter) Merge(path, branch string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Merge", workTree, branch)
+	ret := m.ctrl.Call(m, "Merge", path, branch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Merge indicates an expected call of Merge
-func (mr *MockClienterMockRecorder) Merge(workTree, branch interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) Merge(path, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockClienter)(nil).Merge), workTree, branch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockClienter)(nil).Merge), path, branch)
 }

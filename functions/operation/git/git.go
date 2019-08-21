@@ -1,67 +1,55 @@
 package git
 
 import (
+	"fmt"
 	"os/exec"
-
-	goGit "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
 // Clienter is interface of git client
 type Clienter interface {
-	Clone(path string, hash *string) (*goGit.Worktree, error)
-	Merge(workTree *goGit.Worktree, branch string) error
+	Clone(path string, hash *string) error
+	Merge(path, branch string) error
 }
 
 // Client is git client
 type Client struct {
-	cloneOptions *goGit.CloneOptions
+	cloneURL string
 }
 
 // NewClient creates git client
-func NewClient(cloneOptions *goGit.CloneOptions) *Client {
+func NewClient(cloneURL string) *Client {
 	return &Client{
-		cloneOptions: cloneOptions,
+		cloneURL,
 	}
 }
 
 // Clone a git repository
-func (c *Client) Clone(path string, hash *string) (*goGit.Worktree, error) {
+func (c *Client) Clone(path string, hash *string) error {
 	if err := exec.Command("rm", "-rf", path).Run(); err != nil {
-		return nil, err
+		return err
 	}
-	if err := exec.Command("mkdir", path).Run(); err != nil {
-		return nil, err
+	if err := exec.Command("mkdir", "-p", path).Run(); err != nil {
+		return err
 	}
-	repo, err := goGit.PlainClone(path, false, c.cloneOptions)
-	if err != nil {
-		return nil, err
-	}
-	workTree, err := repo.Worktree()
-	if err != nil {
-		return nil, err
+	if err := exec.Command("git", "clone", c.cloneURL, path).Run(); err != nil {
+		return fmt.Errorf("git clone failed: %s", err.Error())
 	}
 	if hash != nil {
-		workTree, err := repo.Worktree()
-		if err != nil {
-			return nil, err
-		}
-		if err := workTree.Checkout(&goGit.CheckoutOptions{
-			Hash: plumbing.NewHash(*hash),
-		}); err != nil {
-			return nil, err
+		cmd := exec.Command("git", "checkout", *hash)
+		cmd.Dir = path
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("git checkout failed: %s", err.Error())
 		}
 	}
-	return workTree, nil
+	return nil
 }
 
-// Merge a branch. Noted it fails if not fast-forward merge
-func (c *Client) Merge(workTree *goGit.Worktree, branch string) error {
-	// go-git doesn't support Merge() so use Pull() instead. It fails if not fast-forward merge.
-	if err := workTree.Pull(&goGit.PullOptions{
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
-	}); err != nil {
-		return err
+// Merge a branch
+func (c *Client) Merge(path, branch string) error {
+	cmd := exec.Command("git", "merge", branch)
+	cmd.Dir = path
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git merge failed: %s", err.Error())
 	}
 	return nil
 }

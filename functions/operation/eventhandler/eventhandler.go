@@ -9,7 +9,6 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/cdk"
 	"github.com/sambaiz/cdkbot/functions/operation/config"
 	"github.com/sambaiz/cdkbot/functions/operation/git"
-	goGit "gopkg.in/src-d/go-git.v4"
 )
 
 // EventHandler handles events
@@ -21,10 +20,10 @@ type EventHandler struct {
 }
 
 // New EventHandler
-func New(ctx context.Context, client platform.Clienter, cloneOptions *goGit.CloneOptions) *EventHandler {
+func New(ctx context.Context, client platform.Clienter, cloneURL string) *EventHandler {
 	return &EventHandler{
 		platform: client,
-		git:      git.NewClient(cloneOptions),
+		git:      git.NewClient(cloneURL),
 		config:   new(config.Reader),
 		cdk:      new(cdk.Client),
 	}
@@ -66,11 +65,10 @@ func (e *EventHandler) setup(ctx context.Context) (string, *config.Config, *conf
 	if err != nil {
 		return "", nil, nil, err
 	}
-	workTree, err := e.git.Clone(clonePath, &hash)
-	if err != nil {
+	if err := e.git.Clone(clonePath, &hash); err != nil {
 		return "", nil, nil, err
 	}
-	if err := e.git.Merge(workTree, baseBranch); err != nil {
+	if err := e.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)); err != nil {
 		return "", nil, nil, err
 	}
 
