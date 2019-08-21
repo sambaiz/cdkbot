@@ -45,3 +45,17 @@ func (mr *MockClienterMockRecorder) Clone(path, hash interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockClienter)(nil).Clone), path, hash)
 }
+
+// Merge mocks base method
+func (m *MockClienter) Merge(path, branch string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Merge", path, branch)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Merge indicates an expected call of Merge
+func (mr *MockClienterMockRecorder) Merge(path, branch interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockClienter)(nil).Merge), path, branch)
+}

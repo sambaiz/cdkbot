@@ -51,6 +51,7 @@ Resources:
       ReservedConcurrentExecutions: 1
       Layers:
         - !Ref NPMLayer
+        - "arn:aws:lambda:ap-northeast-1:553035198032:layer:git:6"
       Environment:
         Variables:
           PLATFORM: !Ref Platform

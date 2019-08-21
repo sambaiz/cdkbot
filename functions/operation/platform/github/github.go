@@ -1,18 +1,18 @@
 package github
 
 import (
+	"fmt"
 	"context"
 	"github.com/sambaiz/cdkbot/functions/operation/eventhandler"
 	"github.com/sambaiz/cdkbot/functions/operation/platform/github/client"
-	"gopkg.in/src-d/go-git.v4"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/aws/aws-lambda-go/events"
 	goGitHub "github.com/google/go-github/v26/github"
-	goGitHttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Handler handles GitHub webhook
@@ -39,10 +39,6 @@ func Handler(
 		}, nil
 	}
 
-	cloneAuth := &goGitHttp.BasicAuth{
-		Username: os.Getenv("GITHUB_USER_NAME"),
-		Password: os.Getenv("GITHUB_ACCESS_TOKEN"),
-	}
 
 	switch ev := hook.(type) {
 	case *goGitHub.PullRequestEvent:
@@ -54,10 +50,10 @@ func Handler(
 				ev.GetRepo().GetName(),
 				ev.GetPullRequest().GetNumber(),
 			),
-			&git.CloneOptions{
-				URL:  ev.GetRepo().GetCloneURL(),
-				Auth: cloneAuth,
-			},
+			fmt.Sprintf("https://%s:%s@%s",
+				os.Getenv("GITHUB_USER_NAME"),
+				os.Getenv("GITHUB_ACCESS_TOKEN"),
+				strings.Replace(ev.GetRepo().GetCloneURL(), "https://", "", 1)),
 		)
 		switch ev.GetAction() {
 		case "opened":
@@ -72,10 +68,10 @@ func Handler(
 				ev.GetRepo().GetName(),
 				ev.GetIssue().GetNumber(),
 			),
-			&git.CloneOptions{
-				URL:  ev.GetRepo().GetCloneURL(),
-				Auth: cloneAuth,
-			},
+			fmt.Sprintf("https://%s:%s@%s",
+				os.Getenv("GITHUB_USER_NAME"),
+				os.Getenv("GITHUB_ACCESS_TOKEN"),
+				strings.Replace(ev.GetRepo().GetCloneURL(), "https://", "", 1)),
 		)
 		switch ev.GetAction() {
 		case "created":

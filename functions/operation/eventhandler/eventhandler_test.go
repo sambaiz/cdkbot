@@ -84,9 +84,10 @@ func constructSetupMock(
 ) {
 	hash := "hash"
 	platformClient.EXPECT().GetPullRequestLatestCommitHash(ctx).Return(hash, nil)
-	gitClient.EXPECT().Clone(clonePath, &hash).Return(nil)
-	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 	platformClient.EXPECT().GetPullRequestBaseBranch(ctx).Return(baseBranch, nil)
+	gitClient.EXPECT().Clone(clonePath, &hash).Return( nil)
+	gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)).Return(nil)
+	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 	_, ok := cfg.Targets[baseBranch]
 	if !ok {
 		return

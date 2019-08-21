@@ -10,7 +10,7 @@ import (
 // CommentCreated handles the event of comment created
 func (e *EventHandler) CommentCreated(
 	ctx context.Context,
-	userName string,
+	userName,
 	comment string,
 ) error {
 	cmd := parseCommand(comment)

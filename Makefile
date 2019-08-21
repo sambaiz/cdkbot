@@ -1,4 +1,4 @@
-.PHONY: clean build package publish install-tools lint test _test doc
+.PHONY: clean build package deploy publish install-tools lint test _test doc
 
 clean: 
 	rm -rf ./functions/operation/operation
@@ -14,6 +14,14 @@ build:
 
 package: build
 	sam package --output-template-file packaged.yaml --s3-bucket cdkbot --region us-east-1
+
+deploy: package
+	aws cloudformation deploy --parameter-overrides \
+	Platform=${Platform} \
+	GitHubUserName=${GitHubUserName} \
+	GitHubAccessToken=${GitHubAccessToken} \
+	GitHubWebhookSecret=${GitHubWebhookSecret} \
+	--template-file packaged.yaml --stack-name cdkbot --capabilities CAPABILITY_IAM
 
 publish: package
 	sam publish -t packaged.yaml --region us-east-1
