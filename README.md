@@ -30,7 +30,7 @@ broken codes can be merged and surplus PRs are opened to revert or fix, which fl
 Deploying before merging PR has the advantage of avoiding these but changes may be reverted.
 To prevent this, cdkbot takes measures these:
 
-- base branch is merged internally before operation and deployed PR is merged automatically
+- base branch is merged internally before an operation, and deployed PR is merged automatically
 - sets the number of concurrent executions to 1 and forces to see latest differences by `cdkbot:outdated diffs` label.
 
 ## Install & Settings
@@ -58,11 +58,12 @@ Add a webhook at repository's settings.
 - Event trigger: Issue comments and Pull requests
 
 After the first run, enable "Require status checks to pass before merging" 
-in the branch protection rule (Recommended)
+in the branch protection rule to prevent merging before deploying (Recommended)
 
 ### cdkbot.yml
 
-Put `cdkbot.yml` at the repository root.
+Put `cdkbot.yml` at the repository root. 
+cdkbot refer to the base branch so it's needed to be merged to apply the changes.
 
 ```
 cdkRoot: . # CDK directory path from repository root.
