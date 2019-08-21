@@ -6,6 +6,7 @@ Currently only GitHub is supported.
 ## Operations
 
 Following commands are runnable by PR comments. 
+Before an operation, base (where to merge) branch is merged internally.
 
 - `/diff`: cdk diff all stacks
 - `/deploy`: cdk deploy all stacks
@@ -13,24 +14,23 @@ Following commands are runnable by PR comments.
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 
 After running `/deploy`, 
-PR is merged automatically if there is no differences anymore, 
+PR is merged automatically if there are no differences anymore, 
 and `cdkbot:outdated diffs` label is added to other PRs. 
 To run `/deploy` on those, 
 it is needed to run `/diff` again to see the latest differences.
 
 ![oudated diffs label](./doc-assets/outdated-diffs.png)
 
-### FYI: Why deploys before merging PR, not after merging?
+### Why deploys before merging PR?
 
-cdk deploy fails unexpectedly due to runtime errors of CFn template and may need to be fixed again and again.
+cdk deploy sometimes fails unexpectedly due to runtime errors of CFn template.
 Therefore, if the flow that deploys after merging is adopted, 
-broken codes can be merged and surplus PRs must be opened to fix, which flagment changes. 
+broken codes can be merged and surplus PRs are opened to revert or fix, which flagment changes. 
 
-Deploying before merging has the advantage of avoiding these 
-but also has the problem that old stack may be deployed.
-In order to prevent this, cdkbot takes measures these:
+Deploying before merging PR has the advantage of avoiding these but changes may be reverted.
+To prevent this, cdkbot takes measures these:
 
-- merges deployed PR automatically
+- base branch is merged internally before operation and deployed PR is merged automatically
 - sets the number of concurrent executions to 1 and forces to see latest differences by `cdkbot:outdated diffs` label.
 
 ## Install & Settings
