@@ -3,8 +3,10 @@ package eventhandler
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
+
+	"github.com/sambaiz/cdkbot/functions/operation/constant"
 )
 
 // CommentCreated handles the event of comment created
@@ -114,11 +116,19 @@ func (e *EventHandler) doActionDiff(
 	cdkPath string,
 	contexts map[string]string,
 ) (bool, error) {
+	comments, err := e.platform.ListComments(ctx)
+	if err != nil {
+		return false, err
+	}
 	diff, hasDiff := e.cdk.Diff(cdkPath, "", contexts)
 	if err := e.platform.CreateComment(
 		ctx,
 		fmt.Sprintf("### cdk diff\n```\n%s\n```", diff),
 	); err != nil {
+		return false, err
+	}
+	// Leave only one diff comment after previous deploy to clean PR
+	if err := e.deleteDiffCommentsUpToPreviousDeploy(ctx, comments); err != nil {
 		return false, err
 	}
 	if err := e.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
@@ -166,4 +176,18 @@ func (e *EventHandler) doActionDeploy(
 	}
 
 	return hasDiff, nil
+}
+
+func (e *EventHandler) deleteDiffCommentsUpToPreviousDeploy(ctx context.Context, comments []platform.Comment) error {
+	for i := len(comments) - 1; i >= 0; i-- {
+		if strings.HasPrefix(comments[i].Body,"### cdk deploy\n") {
+			return nil
+		}
+		if strings.HasPrefix(comments[i].Body, "### cdk diff\n") {
+			if err := e.platform.DeleteComment(ctx, comments[i].ID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

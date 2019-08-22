@@ -3,8 +3,9 @@ package eventhandler
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"testing"
+
+	"github.com/sambaiz/cdkbot/functions/operation/constant"
 
 	"github.com/golang/mock/gomock"
 	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
@@ -85,7 +86,7 @@ func constructSetupMock(
 	hash := "hash"
 	platformClient.EXPECT().GetPullRequestLatestCommitHash(ctx).Return(hash, nil)
 	platformClient.EXPECT().GetPullRequestBaseBranch(ctx).Return(baseBranch, nil)
-	gitClient.EXPECT().Clone(clonePath, &hash).Return( nil)
+	gitClient.EXPECT().Clone(clonePath, &hash).Return(nil)
 	gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)).Return(nil)
 	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
 	_, ok := cfg.Targets[baseBranch]

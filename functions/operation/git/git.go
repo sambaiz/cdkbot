@@ -59,4 +59,3 @@ func (c *Client) Merge(path, branch string) error {
 	}
 	return nil
 }
-

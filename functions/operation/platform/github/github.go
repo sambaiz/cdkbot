@@ -1,8 +1,8 @@
 package github
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/eventhandler"
 	"github.com/sambaiz/cdkbot/functions/operation/platform/github/client"
 	"net/http"
@@ -38,7 +38,6 @@ func Handler(
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
-
 
 	switch ev := hook.(type) {
 	case *goGitHub.PullRequestEvent:

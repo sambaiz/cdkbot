@@ -3,9 +3,11 @@ package eventhandler
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
+
+	"github.com/sambaiz/cdkbot/functions/operation/constant"
 
 	"github.com/golang/mock/gomock"
 	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
@@ -174,12 +176,15 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 
 		if cmd.action == actionDiff {
 			// doActionDiff()
+			previousComments := []platform.Comment{{ID: 1, Body: "### cdk diff\n```\nresult\n```"}}
+			platformClient.EXPECT().ListComments(ctx).Return(previousComments, nil)
 			result := "result"
 			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff)
 			platformClient.EXPECT().CreateComment(
 				ctx,
 				fmt.Sprintf("### cdk diff\n```\n%s\n```", result),
 			).Return(nil)
+			platformClient.EXPECT().DeleteComment(ctx, previousComments[0].ID).Return(nil)
 			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelOutdatedDiff).Return(nil)
 		} else if cmd.action == actionDeploy {
 			if !cfg.IsUserAllowedDeploy(userName) {
@@ -197,7 +202,7 @@ func TestEventHandlerIssueCommentCreated(t *testing.T) {
 			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
 			result := "result"
 			cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
-			cdkClient.EXPECT().Diff(cdkPath, "" ,target.Contexts).Return("", resultHasDiff)
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
 			platformClient.EXPECT().CreateComment(
 				ctx,
 				fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, "All stacks have been deployed :tada:"),
@@ -294,7 +299,7 @@ func TestEventHandlerHasOutdatedDiff(t *testing.T) {
 			out:    true,
 		},
 		{
-			title:  "not has",
+			title:  "doesn't have",
 			labels: map[string]constant.Label{constant.LabelNoDiff.Name: constant.LabelNoDiff},
 			out:    false,
 		},
@@ -311,6 +316,76 @@ func TestEventHandlerHasOutdatedDiff(t *testing.T) {
 			}
 			has, err := eventHandler.hasOutdatedDiffLabel(ctx)
 			assert.Equal(t, test.out, has)
+			assert.Equal(t, test.isError, err != nil)
+		})
+	}
+}
+
+func TestEventHandlerDeleteDiffCommentsUpToPreviousDeploy(t *testing.T) {
+	diffComment := "### cdk diff\n```\nresult\n```"
+	deployComment := "### cdk deploy\n```\nresult\n```"
+	tests := []struct {
+		title   string
+		in      []platform.Comment
+		expectedDeletedIDs []int64
+		isError bool
+	}{
+		{
+			title:  "Delete diff comments up to previous deploy",
+			in: []platform.Comment{
+				{
+					ID: 1,
+					Body: diffComment,
+				},
+				{
+					ID: 2,
+					Body: diffComment,
+				},
+			},
+			expectedDeletedIDs: []int64{1, 2},
+		},
+		{
+			title:  "Don't delete anything other than diff comments",
+			in: []platform.Comment{
+				{
+					ID: 1,
+					Body: "a",
+				},
+				{
+					ID: 2,
+					Body: diffComment,
+				},
+			},
+			expectedDeletedIDs: []int64{2},
+		},
+		{
+			title:  "Don't delete diff comments before previous deploy",
+			in: []platform.Comment{
+				{
+					ID: 1,
+					Body: diffComment,
+				},
+				{
+					ID: 2,
+					Body: deployComment,
+				},
+			},
+			expectedDeletedIDs: []int64{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			platformClient := platformMock.NewMockClienter(ctrl)
+			for _, id := range test.expectedDeletedIDs {
+				platformClient.EXPECT().DeleteComment(ctx, id).Return(nil)
+			}
+			eventHandler := &EventHandler{
+				platform: platformClient,
+			}
+			err := eventHandler.deleteDiffCommentsUpToPreviousDeploy(ctx, test.in)
 			assert.Equal(t, test.isError, err != nil)
 		})
 	}
