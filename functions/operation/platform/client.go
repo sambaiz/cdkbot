@@ -2,14 +2,29 @@ package platform
 
 import (
 	"context"
+
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 )
+
+// Comment is a comment of PR
+type Comment struct {
+	ID int64
+	Body string
+}
+
 
 // Clienter is interface of platform client
 type Clienter interface {
 	CreateComment(
 		ctx context.Context,
 		body string,
+	) error
+	ListComments(
+		ctx context.Context,
+	) ([]Comment, error)
+	DeleteComment(
+		ctx context.Context,
+		commentID int64,
 	) error
 	AddLabel(
 		ctx context.Context,

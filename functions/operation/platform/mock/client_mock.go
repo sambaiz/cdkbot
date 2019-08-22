@@ -8,6 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	constant "github.com/sambaiz/cdkbot/functions/operation/constant"
+	platform "github.com/sambaiz/cdkbot/functions/operation/platform"
 	reflect "reflect"
 )
 
@@ -46,6 +47,35 @@ func (m *MockClienter) CreateComment(ctx context.Context, body string) error {
 func (mr *MockClienterMockRecorder) CreateComment(ctx, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComment", reflect.TypeOf((*MockClienter)(nil).CreateComment), ctx, body)
+}
+
+// ListComments mocks base method
+func (m *MockClienter) ListComments(ctx context.Context) ([]platform.Comment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListComments", ctx)
+	ret0, _ := ret[0].([]platform.Comment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListComments indicates an expected call of ListComments
+func (mr *MockClienterMockRecorder) ListComments(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListComments", reflect.TypeOf((*MockClienter)(nil).ListComments), ctx)
+}
+
+// DeleteComment mocks base method
+func (m *MockClienter) DeleteComment(ctx context.Context, commentID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteComment", ctx, commentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteComment indicates an expected call of DeleteComment
+func (mr *MockClienterMockRecorder) DeleteComment(ctx, commentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteComment", reflect.TypeOf((*MockClienter)(nil).DeleteComment), ctx, commentID)
 }
 
 // AddLabel mocks base method

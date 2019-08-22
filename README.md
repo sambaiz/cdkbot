@@ -1,12 +1,13 @@
 # cdkbot
 
-cdkbot offers AWS CDK operations on Pull Request.
+cdkbot is AWS CDK review & deploy tool running on Pull Request.
 Currently only GitHub is supported.
 
-## Operations
+## Commands
 
 Following commands are runnable by PR comments. 
-Before an operation, base (where to merge) branch is merged internally.
+Before running a command, base (where to merge) branch is merged internally 
+so it is needed to resolve conflicts if it occurred.
 
 - `/diff`: cdk diff all stacks
 - `/deploy`: cdk deploy all stacks
@@ -30,7 +31,7 @@ broken codes can be merged and surplus PRs are opened to revert or fix, which fl
 Deploying before merging PR has the advantage of avoiding these but changes may be reverted.
 To prevent this, cdkbot takes measures these:
 
-- base branch is merged internally before an operation, and deployed PR is merged automatically
+- base branch is merged internally before running a command, and deployed PR is merged automatically
 - sets the number of concurrent executions to 1 and forces to see latest differences by `cdkbot:outdated diffs` label.
 
 ## Install & Settings
