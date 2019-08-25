@@ -81,12 +81,12 @@ func (r *Runner) Deploy(
 }
 
 func (r *Runner) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
-	// get labels from not event but API because to get latest one.
-	labels, err := r.platform.GetPullRequestLabels(ctx)
+	// get labels from not event but API because to get latest data.
+	pr, err := r.platform.GetPullRequest(ctx)
 	if err != nil {
 		return false, err
 	}
-	if _, ok := labels[constant.LabelOutdatedDiff.Name]; ok {
+	if _, ok := pr.Labels[constant.LabelOutdatedDiff.Name]; ok {
 		return true, nil
 	}
 	return false, nil

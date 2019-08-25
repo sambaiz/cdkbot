@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
 
@@ -94,8 +95,12 @@ func constructSetupMock(
 ) {
 	baseHash := "baseHash"
 	headHash := "headHash"
-	platformClient.EXPECT().GetPullRequestCommitHash(ctx).Return(baseHash, headHash, nil)
-	platformClient.EXPECT().GetPullRequestBaseBranch(ctx).Return(baseBranch, nil)
+	platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
+		BaseBranch:     baseBranch,
+		BaseCommitHash: baseHash,
+		HeadCommitHash: headHash,
+		Labels:         nil,
+	}, nil)
 	if cloneHead {
 		gitClient.EXPECT().Clone(clonePath, &headHash).Return(nil)
 		gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)).Return(nil)

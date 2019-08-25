@@ -74,23 +74,19 @@ func (r *Runner) updateStatus(
 const clonePath = "/tmp/repo"
 
 func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Config, *config.Target, error) {
-	baseHash, headHash, err := r.platform.GetPullRequestCommitHash(ctx)
-	if err != nil {
-		return "", nil, nil, err
-	}
-	baseBranch, err := r.platform.GetPullRequestBaseBranch(ctx)
+	pr, err := r.platform.GetPullRequest(ctx)
 	if err != nil {
 		return "", nil, nil, err
 	}
 	if cloneHead {
-		if err := r.git.Clone(clonePath, &headHash); err != nil {
+		if err := r.git.Clone(clonePath, &pr.HeadCommitHash); err != nil {
 			return "", nil, nil, err
 		}
-		if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)); err != nil {
+		if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", pr.BaseBranch)); err != nil {
 			return "", nil, nil, err
 		}
 	} else {
-		if err := r.git.Clone(clonePath, &baseHash); err != nil {
+		if err := r.git.Clone(clonePath, &pr.BaseCommitHash); err != nil {
 			return "", nil, nil, err
 		}
 	}
@@ -100,7 +96,7 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 		return "", nil, nil, err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-	target, ok := cfg.Targets[baseBranch]
+	target, ok := cfg.Targets[pr.BaseBranch]
 	if !ok {
 		return cdkPath, cfg, nil, nil
 	}

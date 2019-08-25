@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
 
@@ -119,7 +120,9 @@ func TestRunner_Deploy(t *testing.T) {
 		cdkClient := cdkMock.NewMockClienter(ctrl)
 
 		// hasOutdatedDiffs()
-		platformClient.EXPECT().GetPullRequestLabels(ctx).Return(labels, nil)
+		platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
+			Labels:         labels,
+		}, nil)
 
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
@@ -230,7 +233,9 @@ func TestRunner_hasOutdatedDiff(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			platformClient := platformMock.NewMockClienter(ctrl)
-			platformClient.EXPECT().GetPullRequestLabels(ctx).Return(test.labels, nil)
+			platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
+				Labels:         test.labels,
+			}, nil)
 			runner := &Runner{
 				platform: platformClient,
 			}

@@ -12,6 +12,14 @@ type Comment struct {
 	Body string
 }
 
+// PullRequest is a PR
+type PullRequest struct {
+	BaseBranch string
+	BaseCommitHash string
+	HeadCommitHash string
+	Labels map[string]constant.Label
+}
+
 // Clienter is interface of platform client
 type Clienter interface {
 	CreateComment(
@@ -37,9 +45,7 @@ type Clienter interface {
 		ctx context.Context,
 		label constant.Label,
 	) error
-	GetPullRequestBaseBranch(ctx context.Context) (string, error)
-	GetPullRequestCommitHash(ctx context.Context) (string, string, error)
-	GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error)
+	GetPullRequest(ctx context.Context) (*PullRequest, error)
 	GetOpenPullRequestNumbersByLabel(
 		ctx context.Context,
 		label constant.Label,

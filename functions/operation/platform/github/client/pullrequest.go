@@ -5,45 +5,29 @@ import (
 	"fmt"
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 )
 
-// GetPullRequestCommitHash gets base and head commit hash of PR
-func (c *Client) GetPullRequestCommitHash(ctx context.Context) (string, string, error) {
-	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
-	if err != nil {
-		return "", "", err
-	}
-
-	return pr.GetBase().GetSHA(), pr.GetHead().GetSHA(), nil
-}
-
-// GetPullRequestBaseBranch gets base branch of PR
-func (c *Client) GetPullRequestBaseBranch(
-	ctx context.Context,
-) (string, error) {
-	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
-	if err != nil {
-		return "", err
-	}
-	// Trim username from username:branch
-	parts := strings.Split(pr.GetBase().GetLabel(), ":")
-	return parts[len(parts)-1], nil
-}
-
-// GetPullRequestLabels gets PR's labels and returns map[label name]constant.Label
-func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error) {
+// GetPullRequest gets a PR
+func (c *Client) GetPullRequest(ctx context.Context) (*platform.PullRequest, error) {
 	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
 	if err != nil {
 		return nil, err
 	}
+	refParts := strings.Split(pr.GetBase().GetLabel(), ":")
 	labels := map[string]constant.Label{}
 	for _, label := range pr.Labels {
 		if lb, ok := constant.NameToLabel[label.GetName()]; ok {
 			labels[lb.Name] = constant.NameToLabel[lb.Name]
 		}
 	}
-	return labels, nil
+	return &platform.PullRequest{
+		BaseBranch:     refParts[len(refParts)-1],
+		BaseCommitHash: pr.GetBase().GetSHA(),
+		HeadCommitHash: pr.GetHead().GetSHA(),
+		Labels:         labels,
+	}, nil
 }
 
 // GetOpenPullRequestNumbersByLabel gets open PRs having the label
