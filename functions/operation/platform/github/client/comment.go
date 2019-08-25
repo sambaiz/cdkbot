@@ -47,7 +47,7 @@ func (c *Client) ListComments(
 	ret := []platform.Comment{}
 	for _, comment := range comments {
 		ret = append(ret, platform.Comment{
-			ID: comment.GetID(),
+			ID:   comment.GetID(),
 			Body: comment.GetBody(),
 		})
 	}

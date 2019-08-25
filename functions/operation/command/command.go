@@ -8,6 +8,8 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"github.com/sambaiz/cdkbot/functions/operation/git"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	"regexp"
+	"strings"
 )
 
 // Runnerer is interface of Runner
@@ -69,23 +71,24 @@ func (r *Runner) updateStatus(
 	return nil
 }
 
-
 const clonePath = "/tmp/repo"
 
-func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Target, error) {
-	hash, err := r.platform.GetPullRequestLatestCommitHash(ctx)
+func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Config, *config.Target, error) {
+	pr, err := r.platform.GetPullRequest(ctx)
 	if err != nil {
 		return "", nil, nil, err
 	}
-	baseBranch, err := r.platform.GetPullRequestBaseBranch(ctx)
-	if err != nil {
-		return "", nil, nil, err
-	}
-	if err := r.git.Clone(clonePath, &hash); err != nil {
-		return "", nil, nil, err
-	}
-	if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)); err != nil {
-		return "", nil, nil, err
+	if cloneHead {
+		if err := r.git.Clone(clonePath, &pr.HeadCommitHash); err != nil {
+			return "", nil, nil, err
+		}
+		if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", pr.BaseBranch)); err != nil {
+			return "", nil, nil, err
+		}
+	} else {
+		if err := r.git.Clone(clonePath, &pr.BaseCommitHash); err != nil {
+			return "", nil, nil, err
+		}
 	}
 
 	cfg, err := r.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
@@ -93,7 +96,7 @@ func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Tar
 		return "", nil, nil, err
 	}
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-	target, ok := cfg.Targets[baseBranch]
+	target, ok := cfg.Targets[pr.BaseBranch]
 	if !ok {
 		return cdkPath, cfg, nil, nil
 	}
@@ -107,8 +110,45 @@ func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Tar
 func (r *Runner) Run(ctx context.Context, command string, userName string) error {
 	if command == "/diff" {
 		return r.Diff(ctx)
-	} else if command == "/deploy" {
-		return r.Deploy(ctx, userName)
+	} else if strings.HasPrefix(command, "/deploy") {
+		stacks, err := parseStacks(command)
+		if err != nil {
+			return err
+		}
+		return r.Deploy(ctx, userName, stacks)
+	} else if strings.HasPrefix(command, "/rollback") {
+		stacks, err := parseStacks(command)
+		if err != nil {
+			return err
+		}
+		return r.Rollback(ctx, userName, stacks)
+	}
+
+	return nil
+}
+
+func parseStacks(command string) ([]string, error) {
+	args := strings.Split(command, " ")
+	stacks := []string{}
+	if len(args) != 0 {
+		stacks = args[1:]
+		for _, stack := range stacks {
+			if err := validateStackName(stack); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return stacks, nil
+}
+
+// It must start with an alphabetic character and can't be longer than 128 characters.
+// A stack name can contain only alphanumeric characters (case-sensitive) and hyphens.
+var validStackNameFormat = regexp.MustCompile(`^[a-zA-Z][a-zA-Z\d\-]{0,127}$`)
+
+// Check the stack name so that the command does not contain illegal characters.
+func validateStackName(name string) error {
+	if !validStackNameFormat.Match([]byte(name)) {
+		return fmt.Errorf("Invalid stack name %s", name)
 	}
 	return nil
 }

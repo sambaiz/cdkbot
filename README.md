@@ -9,20 +9,30 @@ Following commands are runnable by PR comments.
 Before running a command, base (where to merge) branch is merged internally 
 so it is needed to resolve conflicts if it occurred.
 
-- `/diff`: cdk diff all stacks (run automatically when pushed to PR)
-- `/deploy`: cdk deploy all stacks
+- `/diff`: cdk diff all stacks. Run automatically when open PR and push to PR.
+- `/deploy [stack1 stack2 ...]`: 
+cdk deploy. If not specify stacks, all stacks are passed. 
+After running, PR is merged automatically if there are no differences anymore.
+
+- `/rollback [stack1 stack2 ...]`: cdk deploy at base branch. If not specify stacks, all stacks are passed.
 
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 
-After running `/deploy`, 
-PR is merged automatically if there are no differences anymore, 
-and `cdkbot:outdated diffs` label is added to other PRs. 
-To run `/deploy` on those, 
-it is needed to run `/diff` again to see the latest differences.
+## Label
+
+- `cdkbot:running`: Command is running. 
+- `cdkbot:deployed`: 
+Added when running /deploy. 
+As long as this PR is open for some stacks failure etc., no other PR can be deployed.
+Running /rollback can remove this.
+
+- `cdkbot:outdated diffs`: 
+Added when merging PR. 
+This force to see the latest diffs by running /diff before running /deploy.
 
 ![oudated diffs label](./doc-assets/outdated-diffs.png)
 
-### Why deploys before merging PR?
+## Why deploys before merging PR?
 
 cdk deploy sometimes fails unexpectedly due to runtime errors of CFn template.
 Therefore, if the flow that deploys after merging is adopted, 
@@ -32,7 +42,9 @@ Deploying before merging PR has the advantage of avoiding these but changes may 
 To prevent this, cdkbot takes measures these:
 
 - base branch is merged internally before running a command, and deployed PR is merged automatically
-- sets the number of concurrent executions to 1 and forces to see latest differences by `cdkbot:outdated diffs` label.
+- sets the number of concurrent executions to 1
+- `cdkbot:deployed` label to avoid overwriting other PR deploy
+- `cdkbot:outdated diffs` label to force to see latest differences
 
 ## Install & Settings
 

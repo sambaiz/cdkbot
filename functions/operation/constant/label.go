@@ -24,9 +24,16 @@ var (
 		Description: "Now running",
 		Color:       "0075ca",
 	}
+	// LabelDeployed expresses some stacks are deployed on the PR
+	LabelDeployed = Label{
+		Name:        fmt.Sprintf("%sdeployed", labelPrefix),
+		Description: "Some stacks are deployed. Complete /deploy and merge, or /rollback them.",
+		Color:       "a2eeef",
+	}
 	// NameToLabel is map of label's name to label
 	NameToLabel = map[string]Label{
 		LabelOutdatedDiff.Name: LabelOutdatedDiff,
 		LabelRunning.Name:      LabelRunning,
+		LabelDeployed.Name:     LabelDeployed,
 	}
 )

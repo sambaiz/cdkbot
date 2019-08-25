@@ -8,10 +8,17 @@ import (
 
 // Comment is a comment of PR
 type Comment struct {
-	ID int64
+	ID   int64
 	Body string
 }
 
+// PullRequest is a PR
+type PullRequest struct {
+	BaseBranch string
+	BaseCommitHash string
+	HeadCommitHash string
+	Labels map[string]constant.Label
+}
 
 // Clienter is interface of platform client
 type Clienter interface {
@@ -38,9 +45,12 @@ type Clienter interface {
 		ctx context.Context,
 		label constant.Label,
 	) error
-	GetPullRequestBaseBranch(ctx context.Context) (string, error)
-	GetPullRequestLatestCommitHash(ctx context.Context) (string, error)
-	GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error)
+	GetPullRequest(ctx context.Context) (*PullRequest, error)
+	GetOpenPullRequestNumbersByLabel(
+		ctx context.Context,
+		label constant.Label,
+		excludeMySelf bool,
+	) ([]int, error)
 	MergePullRequest(ctx context.Context, message string) error
 	SetStatus(
 		ctx context.Context,

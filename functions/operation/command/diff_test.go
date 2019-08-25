@@ -101,6 +101,7 @@ func TestRunner_Diff(t *testing.T) {
 			gitClient,
 			configClient,
 			cdkClient,
+			true,
 			cfg,
 			baseBranch,
 		)
@@ -152,48 +153,48 @@ func TestRunner_deleteDiffCommentsUpToPreviousDeploy(t *testing.T) {
 	diffComment := "### cdk diff\n```\nresult\n```"
 	deployComment := "### cdk deploy\n```\nresult\n```"
 	tests := []struct {
-		title   string
-		in      []platform.Comment
+		title              string
+		in                 []platform.Comment
 		expectedDeletedIDs []int64
-		isError bool
+		isError            bool
 	}{
 		{
-			title:  "Delete diff comments up to previous deploy",
+			title: "Delete diff comments up to previous deploy",
 			in: []platform.Comment{
 				{
-					ID: 1,
+					ID:   1,
 					Body: diffComment,
 				},
 				{
-					ID: 2,
+					ID:   2,
 					Body: diffComment,
 				},
 			},
 			expectedDeletedIDs: []int64{1, 2},
 		},
 		{
-			title:  "Don't delete anything other than diff comments",
+			title: "Don't delete anything other than diff comments",
 			in: []platform.Comment{
 				{
-					ID: 1,
+					ID:   1,
 					Body: "a",
 				},
 				{
-					ID: 2,
+					ID:   2,
 					Body: diffComment,
 				},
 			},
 			expectedDeletedIDs: []int64{2},
 		},
 		{
-			title:  "Don't delete diff comments before previous deploy",
+			title: "Don't delete diff comments before previous deploy",
 			in: []platform.Comment{
 				{
-					ID: 1,
+					ID:   1,
 					Body: diffComment,
 				},
 				{
-					ID: 2,
+					ID:   2,
 					Body: deployComment,
 				},
 			},

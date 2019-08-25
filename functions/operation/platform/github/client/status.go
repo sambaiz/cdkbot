@@ -21,12 +21,12 @@ func (c *Client) SetStatus(
 	state constant.State,
 	description string,
 ) error {
-	hash, err := c.GetPullRequestLatestCommitHash(ctx)
+	pr, err := c.GetPullRequest(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, _, err = c.client.Repositories.CreateStatus(ctx, c.owner, c.repo, hash, &github.RepoStatus{
+	_, _, err = c.client.Repositories.CreateStatus(ctx, c.owner, c.repo, pr.HeadCommitHash, &github.RepoStatus{
 		State:       stateMap[state],
 		Context:     &statusContext,
 		Description: &description,

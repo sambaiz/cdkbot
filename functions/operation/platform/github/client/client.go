@@ -49,7 +49,7 @@ func NewWithHeadBranch(
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	prs, _, err := client.PullRequests.List(ctx, owner, repo, &github.PullRequestListOptions{
-		Head:        headBranch,
+		Head: headBranch,
 	})
 	if err != nil {
 		return nil, err
@@ -60,4 +60,4 @@ func NewWithHeadBranch(
 	return New(ctx, owner, repo, prs[0].GetNumber()), nil
 }
 
-const maxPage  = 50
+const maxPage = 50

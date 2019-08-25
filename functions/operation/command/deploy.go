@@ -11,6 +11,7 @@ import (
 func (r *Runner) Deploy(
 	ctx context.Context,
 	userName string,
+	stacks []string,
 ) error {
 	if has, _ := r.hasOutdatedDiffLabel(ctx); has {
 		if err := r.platform.CreateComment(ctx, "Differences are outdated. Run /diff instead."); err != nil {
@@ -19,7 +20,7 @@ func (r *Runner) Deploy(
 		return r.Diff(ctx)
 	}
 	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, cfg, target, err := r.setup(ctx)
+		cdkPath, cfg, target, err := r.setup(ctx, true)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -29,21 +30,30 @@ func (r *Runner) Deploy(
 		if !cfg.IsUserAllowedDeploy(userName) {
 			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
 		}
-		if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
-			return constant.StateError, err.Error(), err
-		}
-		stacks, err := r.cdk.List(cdkPath, target.Contexts)
+		deployedPRs, err := r.platform.GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true)
 		if err != nil {
 			return constant.StateError, err.Error(), err
+		}
+		if len(deployedPRs) > 0 {
+			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", deployedPRs[0]), nil
+		}
+		if len(stacks) == 0 {
+			stacks, err = r.cdk.List(cdkPath, target.Contexts)
+			if err != nil {
+				return constant.StateError, err.Error(), err
+			}
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
+		if err := r.platform.AddLabel(ctx, constant.LabelDeployed); err != nil {
+			return constant.StateError, err.Error(), err
+		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
-		message := "All stacks have been deployed :tada:"
+		message := "Success :tada:"
 		if hasDiff {
-			message = "Some stacks are failed to deploy... Don't give up!"
+			message = "To be continued."
 		}
 		if err := r.platform.CreateComment(
 			ctx,
@@ -59,20 +69,24 @@ func (r *Runner) Deploy(
 				); err != nil {
 					return constant.StateError, err.Error(), err
 				}
+			} else {
+				if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
+					return constant.StateError, err.Error(), err
+				}
 			}
+			return constant.StateMergeReady, "No diffs. Let's merge!", nil
 		}
-		return constant.StateMergeReady, "No diffs. Let's merge!", nil
+		return constant.StateNeedDeploy, "Fix if needed and complete deploy.", nil
 	})
 }
 
-
 func (r *Runner) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
-	// get labels from not event but API because to get latest one.
-	labels, err := r.platform.GetPullRequestLabels(ctx)
+	// get labels from not event but API because to get latest data.
+	pr, err := r.platform.GetPullRequest(ctx)
 	if err != nil {
 		return false, err
 	}
-	if _, ok := labels[constant.LabelOutdatedDiff.Name]; ok {
+	if _, ok := pr.Labels[constant.LabelOutdatedDiff.Name]; ok {
 		return true, nil
 	}
 	return false, nil

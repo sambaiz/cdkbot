@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
 
@@ -18,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunner_Deploy(t *testing.T) {
+func TestRunner_Rollback(t *testing.T) {
 	tests := []struct {
 		title                  string
 		inUserName             string
@@ -62,8 +61,8 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			baseBranch:             "develop",
 			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No diffs. Let's merge!",
+			resultState:            constant.StateNeedDeploy,
+			resultStateDescription: "Run /deploy after reviewed",
 		},
 		{
 			title:      "has diffs",
@@ -82,7 +81,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch:             "develop",
 			resultHasDiff:          true,
 			resultState:            constant.StateNeedDeploy,
-			resultStateDescription: "Fix if needed and complete deploy.",
+			resultStateDescription: "Run /deploy after reviewed",
 		},
 		{
 			title:      "user is not allowed to deploy",
@@ -119,11 +118,6 @@ func TestRunner_Deploy(t *testing.T) {
 		configClient := configMock.NewMockReaderer(ctrl)
 		cdkClient := cdkMock.NewMockClienter(ctrl)
 
-		// hasOutdatedDiffs()
-		platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-			Labels:         labels,
-		}, nil)
-
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
@@ -136,7 +130,7 @@ func TestRunner_Deploy(t *testing.T) {
 			gitClient,
 			configClient,
 			cdkClient,
-			true,
+			false,
 			cfg,
 			baseBranch,
 		)
@@ -158,7 +152,6 @@ func TestRunner_Deploy(t *testing.T) {
 			}
 		}
 
-		platformClient.EXPECT().GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true).Return([]int{}, nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		if len(stacks) == 0 {
 			stacks = []string{"Stack1", "Stack2"}
@@ -166,16 +159,14 @@ func TestRunner_Deploy(t *testing.T) {
 		}
 		result := "result"
 		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
-		platformClient.EXPECT().AddLabel(ctx, constant.LabelDeployed).Return(nil)
 		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
-		message := "Success :tada:"
+		message := "Rollback is completed."
 		if resultHasDiff {
 			message = "To be continued."
 		}
-		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message))
+		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message))
 		if !resultHasDiff {
-			platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)
-			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
+			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelDeployed).Return(nil)
 		}
 
 		return &Runner{
@@ -203,45 +194,8 @@ func TestRunner_Deploy(t *testing.T) {
 				test.resultState,
 				test.resultStateDescription)
 			assert.Equal(t, test.isError,
-				runner.Deploy(ctx, test.inUserName, test.inStacks) != nil,
+				runner.Rollback(ctx, test.inUserName, test.inStacks) != nil,
 			)
-		})
-	}
-}
-
-func TestRunner_hasOutdatedDiff(t *testing.T) {
-	tests := []struct {
-		title   string
-		labels  map[string]constant.Label
-		out     bool
-		isError bool
-	}{
-		{
-			title:  "has",
-			labels: map[string]constant.Label{constant.LabelOutdatedDiff.Name: constant.LabelOutdatedDiff},
-			out:    true,
-		},
-		{
-			title:  "doesn't have",
-			labels: map[string]constant.Label{},
-			out:    false,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.title, func(t *testing.T) {
-			ctx := context.Background()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			platformClient := platformMock.NewMockClienter(ctrl)
-			platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-				Labels:         test.labels,
-			}, nil)
-			runner := &Runner{
-				platform: platformClient,
-			}
-			has, err := runner.hasOutdatedDiffLabel(ctx)
-			assert.Equal(t, test.out, has)
-			assert.Equal(t, test.isError, err != nil)
 		})
 	}
 }
