@@ -3,15 +3,33 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"strings"
 )
 
 // GetPullRequestLatestCommitHash gets latest commit hash of PR
 func (c *Client) GetPullRequestLatestCommitHash(ctx context.Context) (string, error) {
-	commits, _, err := c.client.PullRequests.ListCommits(ctx, c.owner, c.repo, c.number, nil)
-	if err != nil {
-		return "", err
+	page := 1
+	commits := []*github.RepositoryCommit{}
+	for true {
+		paging, _, err := c.client.PullRequests.ListCommits(ctx, c.owner, c.repo, c.number, &github.ListOptions{
+			Page:    page,
+			PerPage: 100,
+		})
+		if err != nil {
+			return "", err
+		}
+		if len(paging) == 0 {
+			break
+		}
+		commits = append(commits, paging...)
+		page++
+		// API can't return more than 250 commits for a pull request
+		if len(commits) >= 250 {
+			return "", errors.New("Too many commits")
+		}
 	}
 	if len(commits) == 0 {
 		return "", errors.New("PR has no commits")
@@ -56,9 +74,26 @@ func (c *Client) MergePullRequest(ctx context.Context, message string) error {
 func (c *Client) getOpenPullRequestNumbers(
 	ctx context.Context,
 ) ([]int, error) {
-	prs, _, err := c.client.PullRequests.List(ctx, c.owner, c.repo, nil)
-	if err != nil {
-		return nil, err
+	page := 1
+	prs := []*github.PullRequest{}
+	for true {
+		paging, _, err := c.client.PullRequests.List(ctx, c.owner, c.repo, &github.PullRequestListOptions{
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(paging) == 0 {
+			break
+		}
+		prs = append(prs, paging...)
+		page++
+		if page > maxPage {
+			return nil, fmt.Errorf("Too many PRs")
+		}
 	}
 	numbers := make([]int, 0, len(prs))
 	for _, pr := range prs {

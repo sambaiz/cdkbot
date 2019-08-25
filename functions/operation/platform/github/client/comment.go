@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 )
@@ -17,16 +18,31 @@ func (c *Client) CreateComment(
 	return err
 }
 
-// ListComments gets comments in order of creation
+// ListComments gets comments order by posted asc
 func (c *Client) ListComments(
 	ctx context.Context,
 ) ([]platform.Comment, error) {
-	comments, _, err := c.client.PullRequests.ListComments(ctx, c.owner, c.repo, c.number, &github.PullRequestListCommentsOptions{
-		Sort:        "created",
-		Direction:   "asc",
-	})
-	if err != nil {
-		return nil, err
+	page := 1
+	comments := []*github.IssueComment{}
+	for true {
+		// Return ID asc. Option's order doesn't seem to work
+		paging, _, err := c.client.Issues.ListComments(ctx, c.owner, c.repo, c.number, &github.IssueListCommentsOptions{
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(paging) == 0 {
+			break
+		}
+		comments = append(comments, paging...)
+		page++
+		if page > maxPage {
+			return nil, errors.New("Too many comments")
+		}
 	}
 	ret := []platform.Comment{}
 	for _, comment := range comments {
@@ -43,7 +59,7 @@ func (c *Client) DeleteComment(
 	ctx context.Context,
 	commentID int64,
 ) error {
-	_, err := c.client.PullRequests.DeleteComment(ctx, c.owner, c.repo, commentID)
+	_, err := c.client.Issues.DeleteComment(ctx, c.owner, c.repo, commentID)
 	if err != nil {
 		return err
 	}

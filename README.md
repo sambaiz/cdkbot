@@ -9,7 +9,7 @@ Following commands are runnable by PR comments.
 Before running a command, base (where to merge) branch is merged internally 
 so it is needed to resolve conflicts if it occurred.
 
-- `/diff`: cdk diff all stacks
+- `/diff`: cdk diff all stacks (run automatically when pushed to PR)
 - `/deploy`: cdk deploy all stacks
 
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
@@ -39,7 +39,7 @@ To prevent this, cdkbot takes measures these:
 ### Install
 
 Install from [Serverless Application Repository](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
-or `make deploy Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
+or `make deploy S3Bucket=*** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
 
 - GitHubUserName & GitHubAccessToken
 
@@ -56,7 +56,7 @@ Add a webhook at repository's settings.
 - Payload URL: See CloudFormation Stack output
 - Content type: application/json 
 - Secret: same value of GitHubWebhookSecret
-- Event trigger: Issue comments and Pull requests
+- Event trigger: Pushes, Issue comments and Pull requests
 
 After the first run, enable "Require status checks to pass before merging" 
 in the branch protection rule to prevent merging before deploying (Recommended)

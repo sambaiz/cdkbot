@@ -1,5 +1,7 @@
 .PHONY: clean build package deploy publish install-tools lint test _test doc
 
+S3Bucket=cdkbot
+
 clean: 
 	rm -rf ./functions/operation/operation
 	rm -rf ./functions/webhook/webhook
@@ -13,7 +15,7 @@ build:
 	docker run cdkbot-npmbin cat /tmp/npm-layer.zip > npm-layer.zip && unzip npm-layer.zip -d npm-layer && rm npm-layer.zip
 
 package: build
-	sam package --output-template-file packaged.yaml --s3-bucket cdkbot --region us-east-1
+	sam package --output-template-file packaged.yaml --s3-bucket ${S3Bucket} --region us-east-1
 
 deploy: package
 	aws cloudformation deploy --parameter-overrides \
