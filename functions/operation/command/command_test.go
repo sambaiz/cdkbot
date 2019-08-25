@@ -1,4 +1,4 @@
-package eventhandler
+package command
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEventHandlerUpdateStatus(t *testing.T) {
+func TestRunner_updateStatus(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	platformClient := platformMock.NewMockClienter(ctrl)
@@ -26,10 +26,10 @@ func TestEventHandlerUpdateStatus(t *testing.T) {
 	platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
 	platformClient.EXPECT().SetStatus(ctx, resultState, statusDescription).Return(nil)
 	platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
-	eventHandler := EventHandler{
+	runner := Runner{
 		platform: platformClient,
 	}
-	assert.Nil(t, eventHandler.updateStatus(
+	assert.Nil(t, runner.updateStatus(
 		ctx,
 		func() (constant.State, string, error) {
 			return resultState, statusDescription, nil
@@ -37,7 +37,7 @@ func TestEventHandlerUpdateStatus(t *testing.T) {
 	))
 }
 
-func TestEventHandlerSetup(t *testing.T) {
+func TestRunner_setup(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	platformClient := platformMock.NewMockClienter(ctrl)
@@ -61,13 +61,13 @@ func TestEventHandlerSetup(t *testing.T) {
 		cfg,
 		baseBranch,
 	)
-	eventHandler := &EventHandler{
+	runner := &Runner{
 		platform: platformClient,
 		git:      gitClient,
 		config:   configClient,
 		cdk:      cdkClient,
 	}
-	cdkPath, retCfg, retTarget, err := eventHandler.setup(ctx)
+	cdkPath, retCfg, retTarget, err := runner.setup(ctx)
 	assert.Equal(t, fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), cdkPath)
 	assert.Equal(t, *retCfg, cfg)
 	assert.Equal(t, *retTarget, cfg.Targets[baseBranch])
