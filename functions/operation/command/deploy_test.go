@@ -156,7 +156,6 @@ func TestRunner_Deploy(t *testing.T) {
 		}
 
 		platformClient.EXPECT().GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true).Return([]int{}, nil)
-		platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		if len(stacks) == 0 {
 			stacks = []string{"Stack1", "Stack2"}
@@ -173,6 +172,7 @@ func TestRunner_Deploy(t *testing.T) {
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message))
 		if !resultHasDiff {
 			platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)
+			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
 		}
 
 		return &Runner{

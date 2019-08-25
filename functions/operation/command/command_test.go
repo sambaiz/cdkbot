@@ -40,7 +40,7 @@ func TestRunner_updateStatus(t *testing.T) {
 
 func TestRunner_setup(t *testing.T) {
 	for _, cloneHead := range []bool{true, false} {
-		t.Run(fmt.Sprintf("cloneHead: %v", cloneHead), func (t *testing.T){
+		t.Run(fmt.Sprintf("cloneHead: %v", cloneHead), func(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -114,13 +114,12 @@ func constructSetupMock(
 	return
 }
 
-
 func TestParseStacks(t *testing.T) {
 	tests := []struct {
-		title              string
-		in                 string
-		out                []string
-		isError            bool
+		title   string
+		in      string
+		out     []string
+		isError bool
 	}{
 		{
 			title: "success",
@@ -137,27 +136,28 @@ func TestParseStacks(t *testing.T) {
 		stacks, err := parseStacks(test.in)
 		assert.Equal(t, test.out, stacks)
 		assert.Equal(t, test.isError, err != nil)
-	}}
+	}
+}
 
 func TestValidateStackName(t *testing.T) {
 	tests := []struct {
-		title              string
-		in                 string
-		isError            bool
+		title   string
+		in      string
+		isError bool
 	}{
 		{
-			title: "valid",
-			in: "Stack-1",
+			title:   "valid",
+			in:      "Stack-1",
 			isError: false,
 		},
 		{
-			title: "invalid character",
-			in: "Sta`ck1",
+			title:   "invalid character",
+			in:      "Sta`ck1",
 			isError: true,
 		},
 		{
-			title: "too long",
-			in: strings.Repeat("A", 129),
+			title:   "too long",
+			in:      strings.Repeat("A", 129),
 			isError: true,
 		},
 	}
@@ -165,4 +165,3 @@ func TestValidateStackName(t *testing.T) {
 		assert.Equal(t, test.isError, validateStackName(test.in) != nil)
 	}
 }
-

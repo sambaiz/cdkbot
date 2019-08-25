@@ -46,7 +46,6 @@ func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.
 	return labels, nil
 }
 
-
 // GetOpenPullRequestNumbersByLabel gets open PRs having the label
 func (c *Client) GetOpenPullRequestNumbersByLabel(
 	ctx context.Context,
@@ -79,7 +78,7 @@ func (c *Client) GetOpenPullRequestNumbersByLabel(
 		if excludeMySelf && pr.GetNumber() == c.number {
 			continue
 		}
-		for _, lbl := range pr.Labels{
+		for _, lbl := range pr.Labels {
 			if lbl.GetName() == label.Name {
 				ret = append(ret, pr.GetNumber())
 			}
@@ -87,7 +86,6 @@ func (c *Client) GetOpenPullRequestNumbersByLabel(
 	}
 	return ret, nil
 }
-
 
 // MergePullRequest merges PR
 func (c *Client) MergePullRequest(ctx context.Context, message string) error {

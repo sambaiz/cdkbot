@@ -31,15 +31,11 @@ func (r *Runner) Deploy(
 			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
 		}
 		deployedPRs, err := r.platform.GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true)
-		if err != nil{
+		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
 		if len(deployedPRs) > 0 {
 			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", deployedPRs[0]), nil
-		}
-
-		if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
-			return constant.StateError, err.Error(), err
 		}
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
@@ -71,6 +67,10 @@ func (r *Runner) Deploy(
 					ctx,
 					fmt.Sprintf("cdkbot tried to merge but failed: %s", err.Error()),
 				); err != nil {
+					return constant.StateError, err.Error(), err
+				}
+			} else {
+				if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
 					return constant.StateError, err.Error(), err
 				}
 			}
