@@ -101,6 +101,7 @@ func TestRunner_Diff(t *testing.T) {
 			gitClient,
 			configClient,
 			cdkClient,
+			true,
 			cfg,
 			baseBranch,
 		)

@@ -2,39 +2,20 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/google/go-github/v26/github"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"strings"
 )
 
-// GetPullRequestLatestCommitHash gets latest commit hash of PR
-func (c *Client) GetPullRequestLatestCommitHash(ctx context.Context) (string, error) {
-	page := 1
-	commits := []*github.RepositoryCommit{}
-	for true {
-		paging, _, err := c.client.PullRequests.ListCommits(ctx, c.owner, c.repo, c.number, &github.ListOptions{
-			Page:    page,
-			PerPage: 100,
-		})
-		if err != nil {
-			return "", err
-		}
-		if len(paging) == 0 {
-			break
-		}
-		commits = append(commits, paging...)
-		page++
-		// API can't return more than 250 commits for a pull request
-		if len(commits) >= 250 {
-			return "", errors.New("Too many commits")
-		}
+// GetPullRequestCommitHash gets base and head commit hash of PR
+func (c *Client) GetPullRequestCommitHash(ctx context.Context) (string, string, error) {
+	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
+	if err != nil {
+		return "", "", err
 	}
-	if len(commits) == 0 {
-		return "", errors.New("PR has no commits")
-	}
-	return commits[len(commits)-1].GetSHA(), nil
+
+	return pr.GetBase().GetSHA(), pr.GetHead().GetSHA(), nil
 }
 
 // GetPullRequestBaseBranch gets base branch of PR
@@ -64,6 +45,49 @@ func (c *Client) GetPullRequestLabels(ctx context.Context) (map[string]constant.
 	}
 	return labels, nil
 }
+
+
+// GetOpenPullRequestNumbersByLabel gets open PRs having the label
+func (c *Client) GetOpenPullRequestNumbersByLabel(
+	ctx context.Context,
+	label constant.Label,
+	excludeMySelf bool,
+) ([]int, error) {
+	page := 1
+	prs := []*github.PullRequest{}
+	for true {
+		paging, _, err := c.client.PullRequests.List(ctx, c.owner, c.repo, &github.PullRequestListOptions{
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(paging) == 0 {
+			break
+		}
+		prs = append(prs, paging...)
+		page++
+		if page > maxPage {
+			return nil, fmt.Errorf("Too many PRs")
+		}
+	}
+	var ret []int
+	for _, pr := range prs {
+		if excludeMySelf && pr.GetNumber() == c.number {
+			continue
+		}
+		for _, lbl := range pr.Labels{
+			if lbl.GetName() == label.Name {
+				ret = append(ret, pr.GetNumber())
+			}
+		}
+	}
+	return ret, nil
+}
+
 
 // MergePullRequest merges PR
 func (c *Client) MergePullRequest(ctx context.Context, message string) error {

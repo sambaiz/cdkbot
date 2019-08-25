@@ -13,7 +13,7 @@ func (r *Runner) Diff(
 	ctx context.Context,
 ) error {
 	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, _, target, err := r.setup(ctx)
+		cdkPath, _, target, err := r.setup(ctx, true)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}

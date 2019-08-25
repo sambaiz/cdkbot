@@ -73,8 +73,8 @@ func (r *Runner) updateStatus(
 
 const clonePath = "/tmp/repo"
 
-func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Target, error) {
-	hash, err := r.platform.GetPullRequestLatestCommitHash(ctx)
+func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Config, *config.Target, error) {
+	baseHash, headHash, err := r.platform.GetPullRequestCommitHash(ctx)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -82,11 +82,17 @@ func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Tar
 	if err != nil {
 		return "", nil, nil, err
 	}
-	if err := r.git.Clone(clonePath, &hash); err != nil {
-		return "", nil, nil, err
-	}
-	if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)); err != nil {
-		return "", nil, nil, err
+	if cloneHead {
+		if err := r.git.Clone(clonePath, &headHash); err != nil {
+			return "", nil, nil, err
+		}
+		if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)); err != nil {
+			return "", nil, nil, err
+		}
+	} else {
+		if err := r.git.Clone(clonePath, &baseHash); err != nil {
+			return "", nil, nil, err
+		}
 	}
 
 	cfg, err := r.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
@@ -109,19 +115,34 @@ func (r *Runner) Run(ctx context.Context, command string, userName string) error
 	if command == "/diff" {
 		return r.Diff(ctx)
 	} else if strings.HasPrefix(command, "/deploy") {
-		args := strings.Split(command, " ")
-		stacks := []string{}
-		if len(args) != 0 {
-			stacks = args[1:]
-			for _, stack := range stacks {
-				if err := validateStackName(stack); err != nil {
-					return err
-				}
-			}
+		stacks, err := parseStacks(command)
+		if err != nil {
+			return err
 		}
 		return r.Deploy(ctx, userName, stacks)
+	} else if strings.HasPrefix(command, "/rollback") {
+		stacks, err := parseStacks(command)
+		if err != nil {
+			return err
+		}
+		return r.Rollback(ctx, userName, stacks)
 	}
+
 	return nil
+}
+
+func parseStacks(command string) ([]string, error) {
+	args := strings.Split(command, " ")
+	stacks := []string{}
+	if len(args) != 0 {
+		stacks = args[1:]
+		for _, stack := range stacks {
+			if err := validateStackName(stack); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return stacks, nil
 }
 
 // It must start with an alphabetic character and can't be longer than 128 characters.

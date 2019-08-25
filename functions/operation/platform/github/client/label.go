@@ -14,7 +14,7 @@ func (c *Client) AddLabel(
 	return c.addLabel(ctx, c.number, label)
 }
 
-// AddLabelToOtherPRs adds label to other PRs
+// AddLabelToOtherPRs adds label to other open PRs
 func (c *Client) AddLabelToOtherPRs(
 	ctx context.Context,
 	label constant.Label,

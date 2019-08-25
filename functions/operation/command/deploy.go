@@ -20,7 +20,7 @@ func (r *Runner) Deploy(
 		return r.Diff(ctx)
 	}
 	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, cfg, target, err := r.setup(ctx)
+		cdkPath, cfg, target, err := r.setup(ctx, true)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -30,6 +30,14 @@ func (r *Runner) Deploy(
 		if !cfg.IsUserAllowedDeploy(userName) {
 			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
 		}
+		deployedPRs, err := r.platform.GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true)
+		if err != nil{
+			return constant.StateError, err.Error(), err
+		}
+		if len(deployedPRs) > 0 {
+			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", deployedPRs[0]), nil
+		}
+
 		if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -41,6 +49,9 @@ func (r *Runner) Deploy(
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
+			return constant.StateError, err.Error(), err
+		}
+		if err := r.platform.AddLabel(ctx, constant.LabelDeployed); err != nil {
 			return constant.StateError, err.Error(), err
 		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)

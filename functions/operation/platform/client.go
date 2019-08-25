@@ -38,8 +38,13 @@ type Clienter interface {
 		label constant.Label,
 	) error
 	GetPullRequestBaseBranch(ctx context.Context) (string, error)
-	GetPullRequestLatestCommitHash(ctx context.Context) (string, error)
+	GetPullRequestCommitHash(ctx context.Context) (string, string, error)
 	GetPullRequestLabels(ctx context.Context) (map[string]constant.Label, error)
+	GetOpenPullRequestNumbersByLabel(
+		ctx context.Context,
+		label constant.Label,
+		excludeMySelf bool,
+	) ([]int, error)
 	MergePullRequest(ctx context.Context, message string) error
 	SetStatus(
 		ctx context.Context,

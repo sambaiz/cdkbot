@@ -135,19 +135,20 @@ func (mr *MockClienterMockRecorder) GetPullRequestBaseBranch(ctx interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestBaseBranch", reflect.TypeOf((*MockClienter)(nil).GetPullRequestBaseBranch), ctx)
 }
 
-// GetPullRequestLatestCommitHash mocks base method
-func (m *MockClienter) GetPullRequestLatestCommitHash(ctx context.Context) (string, error) {
+// GetPullRequestCommitHash mocks base method
+func (m *MockClienter) GetPullRequestCommitHash(ctx context.Context) (string, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPullRequestLatestCommitHash", ctx)
+	ret := m.ctrl.Call(m, "GetPullRequestCommitHash", ctx)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// GetPullRequestLatestCommitHash indicates an expected call of GetPullRequestLatestCommitHash
-func (mr *MockClienterMockRecorder) GetPullRequestLatestCommitHash(ctx interface{}) *gomock.Call {
+// GetPullRequestCommitHash indicates an expected call of GetPullRequestCommitHash
+func (mr *MockClienterMockRecorder) GetPullRequestCommitHash(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLatestCommitHash", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLatestCommitHash), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestCommitHash", reflect.TypeOf((*MockClienter)(nil).GetPullRequestCommitHash), ctx)
 }
 
 // GetPullRequestLabels mocks base method
@@ -163,6 +164,21 @@ func (m *MockClienter) GetPullRequestLabels(ctx context.Context) (map[string]con
 func (mr *MockClienterMockRecorder) GetPullRequestLabels(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequestLabels", reflect.TypeOf((*MockClienter)(nil).GetPullRequestLabels), ctx)
+}
+
+// GetOpenPullRequestNumbersByLabel mocks base method
+func (m *MockClienter) GetOpenPullRequestNumbersByLabel(ctx context.Context, label constant.Label, excludeMySelf bool) ([]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOpenPullRequestNumbersByLabel", ctx, label, excludeMySelf)
+	ret0, _ := ret[0].([]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOpenPullRequestNumbersByLabel indicates an expected call of GetOpenPullRequestNumbersByLabel
+func (mr *MockClienterMockRecorder) GetOpenPullRequestNumbersByLabel(ctx, label, excludeMySelf interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOpenPullRequestNumbersByLabel", reflect.TypeOf((*MockClienter)(nil).GetOpenPullRequestNumbersByLabel), ctx, label, excludeMySelf)
 }
 
 // MergePullRequest mocks base method
