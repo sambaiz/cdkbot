@@ -9,8 +9,8 @@ Following commands are runnable by PR comments.
 Before running a command, base (where to merge) branch is merged internally 
 so it is needed to resolve conflicts if it occurred.
 
-- `/diff`: cdk diff all stacks (run automatically when pushed to PR)
-- `/deploy`: cdk deploy all stacks
+- `/diff`: cdk diff all stacks (run automatically when open PR and push to PR)
+- `/deploy [stack1 stack2 ...]`: cdk deploy. If not specify stacks, all stacks are passed.
 
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 

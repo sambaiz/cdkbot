@@ -8,10 +8,9 @@ import (
 
 // Comment is a comment of PR
 type Comment struct {
-	ID int64
+	ID   int64
 	Body string
 }
-
 
 // Clienter is interface of platform client
 type Clienter interface {

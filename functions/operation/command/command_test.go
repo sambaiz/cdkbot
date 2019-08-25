@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
@@ -99,3 +100,31 @@ func constructSetupMock(
 
 	return
 }
+
+func TestValidateStackName(t *testing.T) {
+	tests := []struct {
+		title              string
+		in                 string
+		isError            bool
+	}{
+		{
+			title: "valid",
+			in: "Stack-1",
+			isError: false,
+		},
+		{
+			title: "invalid character",
+			in: "Sta`ck1",
+			isError: true,
+		},
+		{
+			title: "too long",
+			in: strings.Repeat("A", 129),
+			isError: true,
+		},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.isError, validateStackName(test.in) != nil)
+	}
+}
+

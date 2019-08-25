@@ -8,6 +8,8 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"github.com/sambaiz/cdkbot/functions/operation/git"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	"regexp"
+	"strings"
 )
 
 // Runnerer is interface of Runner
@@ -69,7 +71,6 @@ func (r *Runner) updateStatus(
 	return nil
 }
 
-
 const clonePath = "/tmp/repo"
 
 func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Target, error) {
@@ -107,8 +108,30 @@ func (r *Runner) setup(ctx context.Context) (string, *config.Config, *config.Tar
 func (r *Runner) Run(ctx context.Context, command string, userName string) error {
 	if command == "/diff" {
 		return r.Diff(ctx)
-	} else if command == "/deploy" {
-		return r.Deploy(ctx, userName)
+	} else if strings.HasPrefix(command, "/deploy") {
+		args := strings.Split(command, " ")
+		stacks := []string{}
+		if len(args) != 0 {
+			stacks = args[1:]
+			for _, stack := range stacks {
+				if err := validateStackName(stack); err != nil {
+					return err
+				}
+			}
+		}
+		return r.Deploy(ctx, userName, stacks)
+	}
+	return nil
+}
+
+// It must start with an alphabetic character and can't be longer than 128 characters.
+// A stack name can contain only alphanumeric characters (case-sensitive) and hyphens.
+var validStackNameFormat = regexp.MustCompile(`^[a-zA-Z][a-zA-Z\d\-]{0,127}$`)
+
+// Check the stack name so that the command does not contain illegal characters.
+func validateStackName(name string) error {
+	if !validStackNameFormat.Match([]byte(name)) {
+		return fmt.Errorf("Invalid stack name %s", name)
 	}
 	return nil
 }

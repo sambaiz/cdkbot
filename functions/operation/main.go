@@ -26,7 +26,7 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 	ctx := context.Background()
 	var (
 		resp events.APIGatewayProxyResponse
-		err error
+		err  error
 	)
 	switch os.Getenv("PLATFORM") {
 	case "github":

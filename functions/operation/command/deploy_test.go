@@ -21,6 +21,7 @@ func TestRunner_Deploy(t *testing.T) {
 	tests := []struct {
 		title                  string
 		inUserName             string
+		inStacks               []string
 		cfg                    config.Config
 		baseBranch             string
 		labels                 map[string]constant.Label
@@ -32,6 +33,7 @@ func TestRunner_Deploy(t *testing.T) {
 		{
 			title:      "no targets are matched",
 			inUserName: "sambaiz",
+			inStacks:   []string{},
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -46,6 +48,7 @@ func TestRunner_Deploy(t *testing.T) {
 		{
 			title:      "has no diffs",
 			inUserName: "sambaiz",
+			inStacks:   []string{},
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -62,8 +65,28 @@ func TestRunner_Deploy(t *testing.T) {
 			resultStateDescription: "No diffs. Let's merge!",
 		},
 		{
+			title:      "has diffs",
+			inUserName: "sambaiz",
+			inStacks:   []string{"Stack1", "Stack2"},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch:             "develop",
+			resultHasDiff:          true,
+			resultState:            constant.StateNeedDeploy,
+			resultStateDescription: "Fix if needed and complete deploy.",
+		},
+		{
 			title:      "user is not allowed to deploy",
 			inUserName: "sambaiz",
+			inStacks:   []string{},
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -82,6 +105,7 @@ func TestRunner_Deploy(t *testing.T) {
 		ctx context.Context,
 		ctrl *gomock.Controller,
 		userName string,
+		stacks []string,
 		cfg config.Config,
 		baseBranch string,
 		labels map[string]constant.Label,
@@ -132,14 +156,16 @@ func TestRunner_Deploy(t *testing.T) {
 
 		platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-		stacks := []string{"Stack1", "Stack2"}
-		cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
+		if len(stacks) == 0 {
+			stacks = []string{"Stack1", "Stack2"}
+			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
+		}
 		result := "result"
 		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
 		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
-		message := "All stacks have been deployed :tada:"
+		message := "Success :tada:"
 		if resultHasDiff {
-			message = "Some stacks are failed to deploy... Don't give up!"
+			message = "To be continued."
 		}
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message))
 		if !resultHasDiff {
@@ -163,6 +189,7 @@ func TestRunner_Deploy(t *testing.T) {
 				ctx,
 				ctrl,
 				test.inUserName,
+				test.inStacks,
 				test.cfg,
 				test.baseBranch,
 				test.labels,
@@ -170,7 +197,7 @@ func TestRunner_Deploy(t *testing.T) {
 				test.resultState,
 				test.resultStateDescription)
 			assert.Equal(t, test.isError,
-				runner.Deploy(ctx, test.inUserName) != nil,
+				runner.Deploy(ctx, test.inUserName, test.inStacks) != nil,
 			)
 		})
 	}

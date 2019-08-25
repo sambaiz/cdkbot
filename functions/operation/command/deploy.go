@@ -11,6 +11,7 @@ import (
 func (r *Runner) Deploy(
 	ctx context.Context,
 	userName string,
+	stacks []string,
 ) error {
 	if has, _ := r.hasOutdatedDiffLabel(ctx); has {
 		if err := r.platform.CreateComment(ctx, "Differences are outdated. Run /diff instead."); err != nil {
@@ -32,18 +33,20 @@ func (r *Runner) Deploy(
 		if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
 			return constant.StateError, err.Error(), err
 		}
-		stacks, err := r.cdk.List(cdkPath, target.Contexts)
-		if err != nil {
-			return constant.StateError, err.Error(), err
+		if len(stacks) == 0 {
+			stacks, err = r.cdk.List(cdkPath, target.Contexts)
+			if err != nil {
+				return constant.StateError, err.Error(), err
+			}
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
-		message := "All stacks have been deployed :tada:"
+		message := "Success :tada:"
 		if hasDiff {
-			message = "Some stacks are failed to deploy... Don't give up!"
+			message = "To be continued."
 		}
 		if err := r.platform.CreateComment(
 			ctx,
@@ -60,11 +63,11 @@ func (r *Runner) Deploy(
 					return constant.StateError, err.Error(), err
 				}
 			}
+			return constant.StateMergeReady, "No diffs. Let's merge!", nil
 		}
-		return constant.StateMergeReady, "No diffs. Let's merge!", nil
+		return constant.StateNeedDeploy, "Fix if needed and complete deploy.", nil
 	})
 }
-
 
 func (r *Runner) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
 	// get labels from not event but API because to get latest one.

@@ -52,7 +52,7 @@ func (r *Runner) Diff(
 
 func (r *Runner) deleteDiffCommentsUpToPreviousDeploy(ctx context.Context, comments []platform.Comment) error {
 	for i := len(comments) - 1; i >= 0; i-- {
-		if strings.HasPrefix(comments[i].Body,"### cdk deploy\n") {
+		if strings.HasPrefix(comments[i].Body, "### cdk deploy\n") {
 			return nil
 		}
 		if strings.HasPrefix(comments[i].Body, "### cdk diff\n") {
