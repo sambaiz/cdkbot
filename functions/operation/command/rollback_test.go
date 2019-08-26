@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
 
@@ -41,6 +42,7 @@ func TestRunner_Rollback(t *testing.T) {
 				},
 			},
 			baseBranch:             "develop",
+			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          false,
 			resultState:            constant.StateMergeReady,
 			resultStateDescription: "No targets are matched",
@@ -60,6 +62,7 @@ func TestRunner_Rollback(t *testing.T) {
 				},
 			},
 			baseBranch:             "develop",
+			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          false,
 			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "Run /deploy after reviewed",
@@ -79,12 +82,30 @@ func TestRunner_Rollback(t *testing.T) {
 				},
 			},
 			baseBranch:             "develop",
+			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          true,
 			resultState:            constant.StateNeedDeploy,
 			resultStateDescription: "Run /deploy after reviewed",
 		},
 		{
 			title:      "user is not allowed to deploy",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {},
+				},
+				DeployUsers: []string{"foobar"},
+			},
+			baseBranch:             "develop",
+			labels:                 map[string]constant.Label{},
+			resultHasDiff:          true,
+			resultState:            constant.StateError,
+			resultStateDescription: "user sambaiz is not allowed to deploy",
+		},
+		{
+			title:      "PR is not deployed",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -132,7 +153,12 @@ func TestRunner_Rollback(t *testing.T) {
 			cdkClient,
 			false,
 			cfg,
-			baseBranch,
+			&platform.PullRequest{
+				BaseBranch:     baseBranch,
+				BaseCommitHash: "basehash",
+				HeadCommitHash: "headhash",
+				Labels:         labels,
+			},
 		)
 		target, ok := cfg.Targets[baseBranch]
 		if !ok {

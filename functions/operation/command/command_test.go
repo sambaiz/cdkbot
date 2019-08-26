@@ -57,7 +57,12 @@ func TestRunner_setup(t *testing.T) {
 					baseBranch: {},
 				},
 			}
-
+			pr := &platform.PullRequest{
+				BaseBranch:     baseBranch,
+				BaseCommitHash: "basehash",
+				HeadCommitHash: "headhash",
+				Labels:         nil,
+			}
 			constructSetupMock(
 				ctx,
 				platformClient,
@@ -66,7 +71,7 @@ func TestRunner_setup(t *testing.T) {
 				cdkClient,
 				cloneHead,
 				cfg,
-				baseBranch,
+				pr,
 			)
 			runner := &Runner{
 				platform: platformClient,
@@ -74,10 +79,11 @@ func TestRunner_setup(t *testing.T) {
 				config:   configClient,
 				cdk:      cdkClient,
 			}
-			cdkPath, retCfg, retTarget, err := runner.setup(ctx, cloneHead)
+			cdkPath, retCfg, retTarget, outpr, err := runner.setup(ctx, cloneHead)
 			assert.Equal(t, fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), cdkPath)
 			assert.Equal(t, *retCfg, cfg)
 			assert.Equal(t, *retTarget, cfg.Targets[baseBranch])
+			assert.Equal(t, pr, outpr)
 			assert.Nil(t, err)
 		})
 	}
@@ -91,24 +97,17 @@ func constructSetupMock(
 	cdkClient *cdkMock.MockClienter,
 	cloneHead bool,
 	cfg config.Config,
-	baseBranch string,
+	pr *platform.PullRequest,
 ) {
-	baseHash := "baseHash"
-	headHash := "headHash"
-	platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-		BaseBranch:     baseBranch,
-		BaseCommitHash: baseHash,
-		HeadCommitHash: headHash,
-		Labels:         nil,
-	}, nil)
+	platformClient.EXPECT().GetPullRequest(ctx).Return(pr, nil)
 	if cloneHead {
-		gitClient.EXPECT().Clone(clonePath, &headHash).Return(nil)
-		gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", baseBranch)).Return(nil)
+		gitClient.EXPECT().Clone(clonePath, &pr.HeadCommitHash).Return(nil)
+		gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", pr.BaseBranch)).Return(nil)
 	} else {
-		gitClient.EXPECT().Clone(clonePath, &baseHash).Return(nil)
+		gitClient.EXPECT().Clone(clonePath, &pr.BaseCommitHash).Return(nil)
 	}
 	configClient.EXPECT().Read(fmt.Sprintf("%s/cdkbot.yml", clonePath)).Return(&cfg, nil)
-	_, ok := cfg.Targets[baseBranch]
+	_, ok := cfg.Targets[pr.BaseBranch]
 	if !ok {
 		return
 	}

@@ -14,24 +14,13 @@ func (c *Client) AddLabel(
 	return c.addLabel(ctx, c.number, label)
 }
 
-// AddLabelToOtherPRs adds label to other open PRs
-func (c *Client) AddLabelToOtherPRs(
+// AddLabelToOtherPR adds label to other PR
+func (c *Client) AddLabelToOtherPR(
 	ctx context.Context,
 	label constant.Label,
+	number int,
 ) error {
-	numbers, err := c.getOpenPullRequestNumbers(ctx)
-	if err != nil {
-		return err
-	}
-	for _, number := range numbers {
-		if c.number == number {
-			continue
-		}
-		if err := c.addLabel(ctx, number, label); err != nil {
-			return err
-		}
-	}
-	return nil
+	return c.addLabel(ctx, number, label)
 }
 
 // RemoveLabel removes label from PR

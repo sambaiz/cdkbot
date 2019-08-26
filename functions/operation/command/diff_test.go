@@ -103,7 +103,12 @@ func TestRunner_Diff(t *testing.T) {
 			cdkClient,
 			true,
 			cfg,
-			baseBranch,
+			&platform.PullRequest{
+				BaseBranch:     baseBranch,
+				BaseCommitHash: "basehash",
+				HeadCommitHash: "headhash",
+				Labels:         nil,
+			},
 		)
 
 		target, ok := cfg.Targets[baseBranch]

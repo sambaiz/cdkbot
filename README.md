@@ -1,6 +1,6 @@
 # cdkbot
 
-cdkbot is AWS CDK review & deploy tool running on Pull Request.
+cdkbot is AWS CDK review & deploy tool working on Pull Request.
 Currently only GitHub is supported.
 
 ## Commands
@@ -14,7 +14,10 @@ so it is needed to resolve conflicts if it occurred.
 cdk deploy. If not specify stacks, all stacks are passed. 
 After running, PR is merged automatically if there are no differences anymore.
 
-- `/rollback [stack1 stack2 ...]`: cdk deploy at base branch. If not specify stacks, all stacks are passed.
+- `/rollback [stack1 stack2 ...]`: 
+
+cdk deploy at base branch. If not specify stacks, all stacks are passed. 
+The PR must already be deployed.
 
 ![run /diff and /deploy](./doc-assets/run-diff-deploy.png)
 
@@ -23,12 +26,12 @@ After running, PR is merged automatically if there are no differences anymore.
 - `cdkbot:running`: Command is running. 
 - `cdkbot:deployed`: 
 Added when running /deploy. 
-As long as this PR is open for some stacks failure etc., no other PR can be deployed.
+As long as this PR is open for deploying partial stacks etc., no other PR with the same base branch can be deployed.
 Running /rollback can remove this.
 
 - `cdkbot:outdated diffs`: 
-Added when merging PR. 
-This force to see the latest diffs by running /diff before running /deploy.
+Added when merging other PR. 
+This force to see the latest diffs by running /diff before running /deploy on the PRs with the same base branch.
 
 ![oudated diffs label](./doc-assets/outdated-diffs.png)
 

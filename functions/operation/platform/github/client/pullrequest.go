@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// GetPullRequest gets a PR
+// GetPullRequest gets the PR
 func (c *Client) GetPullRequest(ctx context.Context) (*platform.PullRequest, error) {
 	pr, _, err := c.client.PullRequests.Get(ctx, c.owner, c.repo, c.number)
 	if err != nil {
@@ -23,6 +23,7 @@ func (c *Client) GetPullRequest(ctx context.Context) (*platform.PullRequest, err
 		}
 	}
 	return &platform.PullRequest{
+		Number:         pr.GetNumber(),
 		BaseBranch:     refParts[len(refParts)-1],
 		BaseCommitHash: pr.GetBase().GetSHA(),
 		HeadCommitHash: pr.GetHead().GetSHA(),
@@ -30,12 +31,8 @@ func (c *Client) GetPullRequest(ctx context.Context) (*platform.PullRequest, err
 	}, nil
 }
 
-// GetOpenPullRequestNumbersByLabel gets open PRs having the label
-func (c *Client) GetOpenPullRequestNumbersByLabel(
-	ctx context.Context,
-	label constant.Label,
-	excludeMySelf bool,
-) ([]int, error) {
+// GetOpenPullRequests gets open PRs
+func (c *Client) GetOpenPullRequests(ctx context.Context) ([]platform.PullRequest, error) {
 	page := 1
 	prs := []*github.PullRequest{}
 	for true {
@@ -57,16 +54,22 @@ func (c *Client) GetOpenPullRequestNumbersByLabel(
 			return nil, fmt.Errorf("Too many PRs")
 		}
 	}
-	var ret []int
+	var ret []platform.PullRequest
 	for _, pr := range prs {
-		if excludeMySelf && pr.GetNumber() == c.number {
-			continue
-		}
-		for _, lbl := range pr.Labels {
-			if lbl.GetName() == label.Name {
-				ret = append(ret, pr.GetNumber())
+		refParts := strings.Split(pr.GetBase().GetLabel(), ":")
+		labels := map[string]constant.Label{}
+		for _, label := range pr.Labels {
+			if lb, ok := constant.NameToLabel[label.GetName()]; ok {
+				labels[lb.Name] = constant.NameToLabel[lb.Name]
 			}
 		}
+		ret = append(ret, platform.PullRequest{
+			Number:         pr.GetNumber(),
+			BaseBranch:     refParts[len(refParts)-1],
+			BaseCommitHash: pr.GetBase().GetSHA(),
+			HeadCommitHash: pr.GetHead().GetSHA(),
+			Labels:         labels,
+		})
 	}
 	return ret, nil
 }

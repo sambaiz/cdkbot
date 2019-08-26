@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 )
 
@@ -20,7 +21,7 @@ func (r *Runner) Deploy(
 		return r.Diff(ctx)
 	}
 	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, cfg, target, err := r.setup(ctx, true)
+		cdkPath, cfg, target, pr, err := r.setup(ctx, true)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -30,12 +31,12 @@ func (r *Runner) Deploy(
 		if !cfg.IsUserAllowedDeploy(userName) {
 			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
 		}
-		deployedPRs, err := r.platform.GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true)
+		openPRs, err := r.platform.GetOpenPullRequests(ctx)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
-		if len(deployedPRs) > 0 {
-			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", deployedPRs[0]), nil
+		if number, exists := existsOtherDeployedSameBasePRs(openPRs, pr); exists {
+			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", number), nil
 		}
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
@@ -70,8 +71,13 @@ func (r *Runner) Deploy(
 					return constant.StateError, err.Error(), err
 				}
 			} else {
-				if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
-					return constant.StateError, err.Error(), err
+				for _, openPR := range openPRs {
+					if openPR.Number == pr.Number || openPR.BaseBranch != pr.BaseBranch {
+						continue
+					}
+					if err := r.platform.AddLabelToOtherPR(ctx, constant.LabelOutdatedDiff, openPR.Number); err != nil {
+						return constant.StateError, err.Error(), err
+					}
 				}
 			}
 			return constant.StateMergeReady, "No diffs. Let's merge!", nil
@@ -90,4 +96,16 @@ func (r *Runner) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func existsOtherDeployedSameBasePRs(openPRs []platform.PullRequest, pr *platform.PullRequest) (int, bool) {
+	for _, openPR := range openPRs {
+		if openPR.Number == pr.Number || openPR.BaseBranch != pr.BaseBranch {
+			continue
+		}
+		if _, ok := openPR.Labels[constant.LabelDeployed.Name]; ok {
+			return openPR.Number, true
+		}
+	}
+	return 0, false
 }

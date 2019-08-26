@@ -14,7 +14,7 @@ func (r *Runner) Rollback(
 	stacks []string,
 ) error {
 	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, cfg, target, err := r.setup(ctx, false)
+		cdkPath, cfg, target, pr, err := r.setup(ctx, false)
 		if err != nil {
 			return constant.StateError, err.Error(), err
 		}
@@ -23,6 +23,9 @@ func (r *Runner) Rollback(
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
 			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
+		}
+		if _, ok := pr.Labels[constant.LabelDeployed.Name]; !ok {
+			return constant.StateError, "PR is not deployed", nil
 		}
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)

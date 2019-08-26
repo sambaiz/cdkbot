@@ -121,7 +121,7 @@ func TestRunner_Deploy(t *testing.T) {
 
 		// hasOutdatedDiffs()
 		platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-			Labels:         labels,
+			Labels: labels,
 		}, nil)
 
 		// updateStatus()
@@ -138,7 +138,13 @@ func TestRunner_Deploy(t *testing.T) {
 			cdkClient,
 			true,
 			cfg,
-			baseBranch,
+			&platform.PullRequest{
+				Number:         1,
+				BaseBranch:     baseBranch,
+				BaseCommitHash: "basehash",
+				HeadCommitHash: "headhash",
+				Labels:         labels,
+			},
 		)
 		target, ok := cfg.Targets[baseBranch]
 		if !ok {
@@ -158,7 +164,21 @@ func TestRunner_Deploy(t *testing.T) {
 			}
 		}
 
-		platformClient.EXPECT().GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true).Return([]int{}, nil)
+		openPRs := []platform.PullRequest{
+			{
+				Number: 1,
+				BaseBranch: baseBranch,
+			},
+			{
+				Number: 2,
+				BaseBranch: baseBranch,
+			},
+			{
+				Number: 3,
+				BaseBranch: "not" + baseBranch,
+			},
+		}
+		platformClient.EXPECT().GetOpenPullRequests(ctx).Return(openPRs, nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		if len(stacks) == 0 {
 			stacks = []string{"Stack1", "Stack2"}
@@ -175,7 +195,8 @@ func TestRunner_Deploy(t *testing.T) {
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message))
 		if !resultHasDiff {
 			platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)
-			platformClient.EXPECT().AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff).Return(nil)
+			// add label to PR with not same number and same base branch
+			platformClient.EXPECT().AddLabelToOtherPR(ctx, constant.LabelOutdatedDiff, openPRs[1].Number).Return(nil)
 		}
 
 		return &Runner{
@@ -234,7 +255,7 @@ func TestRunner_hasOutdatedDiff(t *testing.T) {
 			defer ctrl.Finish()
 			platformClient := platformMock.NewMockClienter(ctrl)
 			platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-				Labels:         test.labels,
+				Labels: test.labels,
 			}, nil)
 			runner := &Runner{
 				platform: platformClient,
@@ -242,6 +263,76 @@ func TestRunner_hasOutdatedDiff(t *testing.T) {
 			has, err := runner.hasOutdatedDiffLabel(ctx)
 			assert.Equal(t, test.out, has)
 			assert.Equal(t, test.isError, err != nil)
+		})
+	}
+}
+
+func TestExistsOtherDeployedSameBasePRs(t *testing.T) {
+	tests := []struct {
+		title      string
+		inOtherPRs []platform.PullRequest
+		inPR       *platform.PullRequest
+		outNumber  int
+		outExists  bool
+	}{
+		{
+			title: "exists",
+			inOtherPRs: []platform.PullRequest{
+				{
+					Number:     2,
+					BaseBranch: "develop",
+					Labels: map[string]constant.Label{
+						constant.LabelDeployed.Name: constant.LabelDeployed,
+					},
+				},
+			},
+			inPR: &platform.PullRequest{
+				Number:     1,
+				BaseBranch: "develop",
+			},
+			outNumber: 2,
+			outExists: true,
+		},
+		{
+			title: "base branch is not same",
+			inOtherPRs: []platform.PullRequest{
+				{
+					Number:     2,
+					BaseBranch: "master",
+					Labels: map[string]constant.Label{
+						constant.LabelDeployed.Name: constant.LabelDeployed,
+					},
+				},
+			},
+			inPR: &platform.PullRequest{
+				Number:     1,
+				BaseBranch: "develop",
+			},
+			outExists: false,
+		},
+		{
+			title: "number is same",
+			inOtherPRs: []platform.PullRequest{
+				{
+					Number:     1,
+					BaseBranch: "develop",
+					Labels: map[string]constant.Label{
+						constant.LabelDeployed.Name: constant.LabelDeployed,
+					},
+				},
+			},
+			inPR: &platform.PullRequest{
+				Number:     1,
+				BaseBranch: "develop",
+			},
+			outExists: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			number, exists := existsOtherDeployedSameBasePRs(test.inOtherPRs, test.inPR)
+			assert.Equal(t, test.outNumber, number)
+			assert.Equal(t, test.outExists, exists)
 		})
 	}
 }
