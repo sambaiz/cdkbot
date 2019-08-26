@@ -22,19 +22,18 @@ func TestRunner_updateStatus(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	platformClient := platformMock.NewMockClienter(ctrl)
-	resultState := constant.StateMergeReady
-	statusDescription := "description"
+	retState := newResultState(constant.StateMergeReady, "description")
 	platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 	platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-	platformClient.EXPECT().SetStatus(ctx, resultState, statusDescription).Return(nil)
+	platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
 	platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 	runner := Runner{
 		platform: platformClient,
 	}
 	assert.Nil(t, runner.updateStatus(
 		ctx,
-		func() (constant.State, string, error) {
-			return resultState, statusDescription, nil
+		func() (*resultState, error) {
+			return retState, nil
 		},
 	))
 }

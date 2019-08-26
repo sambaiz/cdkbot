@@ -22,8 +22,7 @@ func TestRunner_Diff(t *testing.T) {
 		cfg                    config.Config
 		baseBranch             string
 		resultHasDiff          bool
-		resultState            constant.State
-		resultStateDescription string
+		retState            *resultState
 		isError                bool
 	}{
 		{
@@ -36,8 +35,7 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:             "develop",
 			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No targets are matched",
+			retState:            newResultState(constant.StateMergeReady,"No targets are matched"),
 		},
 		{
 			title: "has diffs",
@@ -53,8 +51,7 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:             "develop",
 			resultHasDiff:          true,
-			resultState:            constant.StateNeedDeploy,
-			resultStateDescription: "Run /deploy after reviewed",
+			retState:            newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
 			title: "has no diffs",
@@ -70,8 +67,7 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:             "develop",
 			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No diffs. Let's merge!",
+			retState:            newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
 		},
 	}
 
@@ -81,8 +77,7 @@ func TestRunner_Diff(t *testing.T) {
 		cfg config.Config,
 		baseBranch string,
 		resultHasDiff bool,
-		resultState constant.State,
-		resultStateDescription string,
+		retState *resultState,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -92,7 +87,7 @@ func TestRunner_Diff(t *testing.T) {
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, resultState, resultStateDescription).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -147,8 +142,7 @@ func TestRunner_Diff(t *testing.T) {
 				test.cfg,
 				test.baseBranch,
 				test.resultHasDiff,
-				test.resultState,
-				test.resultStateDescription)
+				test.retState)
 			assert.Equal(t, test.isError, runner.Diff(ctx) != nil)
 		})
 	}

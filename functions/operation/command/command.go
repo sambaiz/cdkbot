@@ -46,9 +46,22 @@ func NewRunner(client platform.Clienter, cloneURL string) *Runner {
 	}
 }
 
+type resultState struct {
+	state constant.State
+	description string
+}
+
+func newResultState(state constant.State, description string) *resultState {
+	return &resultState{
+		state: state,
+		description: description,
+	}
+}
+
+
 func (r *Runner) updateStatus(
 	ctx context.Context,
-	f func() (constant.State, string, error),
+	f func() (*resultState, error),
 ) error {
 	if err := r.platform.SetStatus(ctx, constant.StateRunning, ""); err != nil {
 		return err
@@ -56,12 +69,12 @@ func (r *Runner) updateStatus(
 	if err := r.platform.AddLabel(ctx, constant.LabelRunning); err != nil {
 		return err
 	}
-	state, statusDescription, err := f()
+	state, err := f()
 	defer func() {
 		r.platform.SetStatus(
 			ctx,
-			state,
-			statusDescription,
+			state.state,
+			state.description,
 		)
 		r.platform.RemoveLabel(ctx, constant.LabelRunning)
 	}()

@@ -27,8 +27,7 @@ func TestRunner_Rollback(t *testing.T) {
 		baseBranch             string
 		labels                 map[string]constant.Label
 		resultHasDiff          bool
-		resultState            constant.State
-		resultStateDescription string
+		retState            *resultState
 		isError                bool
 	}{
 		{
@@ -44,8 +43,7 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:             "develop",
 			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No targets are matched",
+			retState:            newResultState(constant.StateMergeReady, "No targets are matched"),
 		},
 		{
 			title:      "has no diffs",
@@ -64,8 +62,7 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:             "develop",
 			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          false,
-			resultState:            constant.StateNeedDeploy,
-			resultStateDescription: "Run /deploy after reviewed",
+			retState:            newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
 			title:      "has diffs",
@@ -84,8 +81,7 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:             "develop",
 			labels:                 map[string]constant.Label{ constant.LabelDeployed.Name: constant.LabelDeployed },
 			resultHasDiff:          true,
-			resultState:            constant.StateNeedDeploy,
-			resultStateDescription: "Run /deploy after reviewed",
+			retState:            newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
 			title:      "user is not allowed to deploy",
@@ -101,8 +97,7 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:             "develop",
 			labels:                 map[string]constant.Label{},
 			resultHasDiff:          true,
-			resultState:            constant.StateError,
-			resultStateDescription: "user sambaiz is not allowed to deploy",
+			retState:            newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
 		},
 		{
 			title:      "PR is not deployed",
@@ -117,8 +112,7 @@ func TestRunner_Rollback(t *testing.T) {
 			},
 			baseBranch:             "develop",
 			resultHasDiff:          true,
-			resultState:            constant.StateError,
-			resultStateDescription: "user sambaiz is not allowed to deploy",
+			retState:            newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
 		},
 	}
 
@@ -131,8 +125,7 @@ func TestRunner_Rollback(t *testing.T) {
 		baseBranch string,
 		labels map[string]constant.Label,
 		resultHasDiff bool,
-		resultState constant.State,
-		resultStateDescription string,
+		retState *resultState,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -142,7 +135,7 @@ func TestRunner_Rollback(t *testing.T) {
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, resultState, resultStateDescription).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -217,8 +210,7 @@ func TestRunner_Rollback(t *testing.T) {
 				test.baseBranch,
 				test.labels,
 				test.resultHasDiff,
-				test.resultState,
-				test.resultStateDescription)
+				test.retState)
 			assert.Equal(t, test.isError,
 				runner.Rollback(ctx, test.inUserName, test.inStacks) != nil,
 			)
