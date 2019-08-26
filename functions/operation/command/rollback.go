@@ -16,7 +16,7 @@ func (r *Runner) Rollback(
 	return r.updateStatus(ctx, func() (*resultState, error) {
 		cdkPath, cfg, target, pr, err := r.setup(ctx, false)
 		if err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if target == nil {
 			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
@@ -30,12 +30,12 @@ func (r *Runner) Rollback(
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
 			if err != nil {
-				return newResultState(constant.StateError, err.Error()), err
+				return nil, err
 			}
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
 		message := "Rollback is completed."
@@ -46,11 +46,11 @@ func (r *Runner) Rollback(
 			ctx,
 			fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message),
 		); err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if !hasDiff {
 			if err := r.platform.RemoveLabel(ctx, constant.LabelDeployed); err != nil {
-				return newResultState(constant.StateError, err.Error()), err
+				return nil, err
 			}
 		}
 		return newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"), nil

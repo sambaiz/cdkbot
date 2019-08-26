@@ -20,15 +20,15 @@ import (
 
 func TestRunner_Deploy(t *testing.T) {
 	tests := []struct {
-		title                  string
-		inUserName             string
-		inStacks               []string
-		cfg                    config.Config
-		baseBranch             string
-		labels                 map[string]constant.Label
-		resultHasDiff          bool
-		retState               *resultState
-		isError                bool
+		title         string
+		inUserName    string
+		inStacks      []string
+		cfg           config.Config
+		baseBranch    string
+		labels        map[string]constant.Label
+		resultHasDiff bool
+		retState      *resultState
+		isError       bool
 	}{
 		{
 			title:      "no targets are matched",
@@ -40,9 +40,9 @@ func TestRunner_Deploy(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			retState:            newResultState(constant.StateMergeReady, "No targets are matched"),
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
 		},
 		{
 			title:      "has no diffs",
@@ -58,9 +58,9 @@ func TestRunner_Deploy(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			retState:            newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
 		},
 		{
 			title:      "has diffs",
@@ -76,9 +76,9 @@ func TestRunner_Deploy(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          true,
-			retState:            newResultState(constant.StateNeedDeploy, "Fix if needed and complete deploy."),
+			baseBranch:    "develop",
+			resultHasDiff: true,
+			retState:      newResultState(constant.StateNeedDeploy, "Fix if needed and complete deploy."),
 		},
 		{
 			title:      "user is not allowed to deploy",
@@ -91,9 +91,9 @@ func TestRunner_Deploy(t *testing.T) {
 				},
 				DeployUsers: []string{"foobar"},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          true,
-			retState:            newResultState(constant.StateError,"user sambaiz is not allowed to deploy"),
+			baseBranch:    "develop",
+			resultHasDiff: true,
+			retState:      newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
 		},
 	}
 
@@ -160,15 +160,15 @@ func TestRunner_Deploy(t *testing.T) {
 
 		openPRs := []platform.PullRequest{
 			{
-				Number: 1,
+				Number:     1,
 				BaseBranch: baseBranch,
 			},
 			{
-				Number: 2,
+				Number:     2,
 				BaseBranch: baseBranch,
 			},
 			{
-				Number: 3,
+				Number:     3,
 				BaseBranch: "not" + baseBranch,
 			},
 		}

@@ -18,12 +18,12 @@ import (
 
 func TestRunner_Diff(t *testing.T) {
 	tests := []struct {
-		title                  string
-		cfg                    config.Config
-		baseBranch             string
-		resultHasDiff          bool
-		retState            *resultState
-		isError                bool
+		title         string
+		cfg           config.Config
+		baseBranch    string
+		resultHasDiff bool
+		retState      *resultState
+		isError       bool
 	}{
 		{
 			title: "no targets are matched",
@@ -33,9 +33,9 @@ func TestRunner_Diff(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			retState:            newResultState(constant.StateMergeReady,"No targets are matched"),
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
 		},
 		{
 			title: "has diffs",
@@ -49,9 +49,9 @@ func TestRunner_Diff(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          true,
-			retState:            newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+			baseBranch:    "develop",
+			resultHasDiff: true,
+			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
 			title: "has no diffs",
@@ -65,9 +65,9 @@ func TestRunner_Diff(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			retState:            newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
 		},
 	}
 

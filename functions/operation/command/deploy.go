@@ -23,7 +23,7 @@ func (r *Runner) Deploy(
 	return r.updateStatus(ctx, func() (*resultState, error) {
 		cdkPath, cfg, target, pr, err := r.setup(ctx, true)
 		if err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if target == nil {
 			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
@@ -33,7 +33,7 @@ func (r *Runner) Deploy(
 		}
 		openPRs, err := r.platform.GetOpenPullRequests(ctx)
 		if err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if number, exists := existsOtherDeployedSameBasePRs(openPRs, pr); exists {
 			return newResultState(
@@ -44,15 +44,15 @@ func (r *Runner) Deploy(
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
 			if err != nil {
-				return newResultState(constant.StateError, err.Error()), err
+				return nil, err
 			}
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if err := r.platform.AddLabel(ctx, constant.LabelDeployed); err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
 		message := "Success :tada:"
@@ -63,7 +63,7 @@ func (r *Runner) Deploy(
 			ctx,
 			fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message),
 		); err != nil {
-			return newResultState(constant.StateError, err.Error()), err
+			return nil, err
 		}
 		if !hasDiff {
 			if err := r.platform.MergePullRequest(ctx, "automatically merged by cdkbot"); err != nil {
@@ -71,7 +71,7 @@ func (r *Runner) Deploy(
 					ctx,
 					fmt.Sprintf("cdkbot tried to merge but failed: %s", err.Error()),
 				); err != nil {
-					return newResultState(constant.StateError, err.Error()), err
+					return nil, err
 				}
 			} else {
 				for _, openPR := range openPRs {
@@ -79,7 +79,7 @@ func (r *Runner) Deploy(
 						continue
 					}
 					if err := r.platform.AddLabelToOtherPR(ctx, constant.LabelOutdatedDiff, openPR.Number); err != nil {
-						return newResultState(constant.StateError, err.Error()), err
+						return nil, err
 					}
 				}
 			}
