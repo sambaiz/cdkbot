@@ -49,7 +49,6 @@ To prevent this, cdkbot takes measures these:
 - sets the number of concurrent executions to 1
 - `cdkbot:deployed` label to avoid overwriting other PR deploy
 - `cdkbot:outdated diffs` label to force to see latest differences
-- `/deploy` can receive stack
 
 ## Install & Settings
 
