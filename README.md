@@ -15,7 +15,6 @@ cdk deploy. If not specify stacks, all stacks are passed.
 After running, PR is merged automatically if there are no differences anymore.
 
 - `/rollback [stack1 stack2 ...]`: 
-
 cdk deploy at base branch. If not specify stacks, all stacks are passed. 
 Only deployed PR can be roll backed.
 
