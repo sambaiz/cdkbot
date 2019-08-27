@@ -37,7 +37,7 @@ This force to see the latest diffs by running /diff before running /deploy on th
 ## Why deploys before merging PR?
 
 cdk deploy sometimes fails unexpectedly due to runtime errors of CFn template.
-Therefore, if deploys when merging PR, 
+Therefore, if deploys after merging PR, 
 broken codes can be merged and surplus PRs are opened to revert or fix, which flagment changes. 
 In addition, if there are dependencies between stacks, it is necessary to control the deploy order when deleting resources, 
 but to do that, it must specify the execution order beforehand somehow.
