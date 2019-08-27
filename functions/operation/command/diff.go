@@ -12,41 +12,41 @@ import (
 func (r *Runner) Diff(
 	ctx context.Context,
 ) error {
-	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, _, target, err := r.setup(ctx, true)
+	return r.updateStatus(ctx, func() (*resultState, error) {
+		cdkPath, _, target, _, err := r.setup(ctx, true)
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if target == nil {
-			return constant.StateMergeReady, "No targets are matched", nil
+			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
 		}
 
 		comments, err := r.platform.ListComments(ctx)
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		diff, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
 		if err := r.platform.CreateComment(
 			ctx,
 			fmt.Sprintf("### cdk diff\n```\n%s\n```", diff),
 		); err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		// Leave only one diff comment after previous deploy to clean PR
 		if err := r.deleteDiffCommentsUpToPreviousDeploy(ctx, comments); err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if err := r.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if hasDiff {
-			return constant.StateNeedDeploy, "Run /deploy after reviewed", nil
+			return newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"), nil
 		}
-		return constant.StateMergeReady, "No diffs. Let's merge!", nil
+		return newResultState(constant.StateMergeReady, "No diffs. Let's merge!"), nil
 	})
 }
 

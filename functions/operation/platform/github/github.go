@@ -20,21 +20,21 @@ func Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 	logger *zap.Logger,
-) (events.APIGatewayProxyResponse, error) {
+) (*events.APIGatewayProxyResponse, error) {
 	if err := goGitHub.ValidateSignature(
 		req.Headers["X-Hub-Signature"],
 		[]byte(req.Body),
 		[]byte(os.Getenv("GITHUB_WEBHOOK_SECRET")),
 	); err != nil {
 		logger.Info("Signature is invalid", zap.Error(err))
-		return events.APIGatewayProxyResponse{
+		return &events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
 	hook, err := goGitHub.ParseWebHook(req.Headers["X-GitHub-Event"], []byte(req.Body))
 	if err != nil {
 		logger.Error("Failed to parse hook", zap.Error(err))
-		return events.APIGatewayProxyResponse{
+		return &events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
@@ -66,7 +66,7 @@ func Handler(
 		)
 		if err != nil {
 			// Push to branch where PR is not created does nothing
-			return events.APIGatewayProxyResponse{
+			return &events.APIGatewayProxyResponse{
 				StatusCode: http.StatusOK,
 			}, nil
 		}
@@ -96,11 +96,9 @@ func Handler(
 		}
 	}
 	if err != nil {
-		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusInternalServerError,
-		}, err
+		return nil, err
 	}
-	return events.APIGatewayProxyResponse{
+	return &events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,
 	}, nil
 }

@@ -18,13 +18,12 @@ import (
 
 func TestRunner_Diff(t *testing.T) {
 	tests := []struct {
-		title                  string
-		cfg                    config.Config
-		baseBranch             string
-		resultHasDiff          bool
-		resultState            constant.State
-		resultStateDescription string
-		isError                bool
+		title         string
+		cfg           config.Config
+		baseBranch    string
+		resultHasDiff bool
+		retState      *resultState
+		isError       bool
 	}{
 		{
 			title: "no targets are matched",
@@ -34,10 +33,9 @@ func TestRunner_Diff(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No targets are matched",
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
 		},
 		{
 			title: "has diffs",
@@ -51,10 +49,9 @@ func TestRunner_Diff(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          true,
-			resultState:            constant.StateNeedDeploy,
-			resultStateDescription: "Run /deploy after reviewed",
+			baseBranch:    "develop",
+			resultHasDiff: true,
+			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
 			title: "has no diffs",
@@ -68,10 +65,9 @@ func TestRunner_Diff(t *testing.T) {
 					},
 				},
 			},
-			baseBranch:             "develop",
-			resultHasDiff:          false,
-			resultState:            constant.StateMergeReady,
-			resultStateDescription: "No diffs. Let's merge!",
+			baseBranch:    "develop",
+			resultHasDiff: false,
+			retState:      newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
 		},
 	}
 
@@ -81,8 +77,7 @@ func TestRunner_Diff(t *testing.T) {
 		cfg config.Config,
 		baseBranch string,
 		resultHasDiff bool,
-		resultState constant.State,
-		resultStateDescription string,
+		retState *resultState,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -92,7 +87,7 @@ func TestRunner_Diff(t *testing.T) {
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, resultState, resultStateDescription).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -103,7 +98,12 @@ func TestRunner_Diff(t *testing.T) {
 			cdkClient,
 			true,
 			cfg,
-			baseBranch,
+			&platform.PullRequest{
+				BaseBranch:     baseBranch,
+				BaseCommitHash: "basehash",
+				HeadCommitHash: "headhash",
+				Labels:         nil,
+			},
 		)
 
 		target, ok := cfg.Targets[baseBranch]
@@ -142,8 +142,7 @@ func TestRunner_Diff(t *testing.T) {
 				test.cfg,
 				test.baseBranch,
 				test.resultHasDiff,
-				test.resultState,
-				test.resultStateDescription)
+				test.retState)
 			assert.Equal(t, test.isError, runner.Diff(ctx) != nil)
 		})
 	}

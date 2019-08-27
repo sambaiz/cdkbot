@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 )
 
@@ -19,36 +20,39 @@ func (r *Runner) Deploy(
 		}
 		return r.Diff(ctx)
 	}
-	return r.updateStatus(ctx, func() (constant.State, string, error) {
-		cdkPath, cfg, target, err := r.setup(ctx, true)
+	return r.updateStatus(ctx, func() (*resultState, error) {
+		cdkPath, cfg, target, pr, err := r.setup(ctx, true)
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if target == nil {
-			return constant.StateMergeReady, "No targets are matched", nil
+			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
-			return constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName), nil
+			return newResultState(constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
 		}
-		deployedPRs, err := r.platform.GetOpenPullRequestNumbersByLabel(ctx, constant.LabelDeployed, true)
+		openPRs, err := r.platform.GetOpenPullRequests(ctx)
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
-		if len(deployedPRs) > 0 {
-			return constant.StateNeedDeploy, fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", deployedPRs[0]), nil
+		if number, exists := existsOtherDeployedSameBasePRs(openPRs, pr); exists {
+			return newResultState(
+				constant.StateNeedDeploy,
+				fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", number),
+			), nil
 		}
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
 			if err != nil {
-				return constant.StateError, err.Error(), err
+				return nil, err
 			}
 		}
 		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		if err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if err := r.platform.AddLabel(ctx, constant.LabelDeployed); err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
 		message := "Success :tada:"
@@ -59,7 +63,7 @@ func (r *Runner) Deploy(
 			ctx,
 			fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message),
 		); err != nil {
-			return constant.StateError, err.Error(), err
+			return nil, err
 		}
 		if !hasDiff {
 			if err := r.platform.MergePullRequest(ctx, "automatically merged by cdkbot"); err != nil {
@@ -67,16 +71,21 @@ func (r *Runner) Deploy(
 					ctx,
 					fmt.Sprintf("cdkbot tried to merge but failed: %s", err.Error()),
 				); err != nil {
-					return constant.StateError, err.Error(), err
+					return nil, err
 				}
 			} else {
-				if err := r.platform.AddLabelToOtherPRs(ctx, constant.LabelOutdatedDiff); err != nil {
-					return constant.StateError, err.Error(), err
+				for _, openPR := range openPRs {
+					if openPR.Number == pr.Number || openPR.BaseBranch != pr.BaseBranch {
+						continue
+					}
+					if err := r.platform.AddLabelToOtherPR(ctx, constant.LabelOutdatedDiff, openPR.Number); err != nil {
+						return nil, err
+					}
 				}
 			}
-			return constant.StateMergeReady, "No diffs. Let's merge!", nil
+			return newResultState(constant.StateMergeReady, "No diffs. Let's merge!"), nil
 		}
-		return constant.StateNeedDeploy, "Fix if needed and complete deploy.", nil
+		return newResultState(constant.StateNeedDeploy, "Fix if needed and complete deploy."), nil
 	})
 }
 
@@ -90,4 +99,16 @@ func (r *Runner) hasOutdatedDiffLabel(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func existsOtherDeployedSameBasePRs(openPRs []platform.PullRequest, pr *platform.PullRequest) (int, bool) {
+	for _, openPR := range openPRs {
+		if openPR.Number == pr.Number || openPR.BaseBranch != pr.BaseBranch {
+			continue
+		}
+		if _, ok := openPR.Labels[constant.LabelDeployed.Name]; ok {
+			return openPR.Number, true
+		}
+	}
+	return 0, false
 }

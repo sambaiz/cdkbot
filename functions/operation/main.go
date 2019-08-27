@@ -22,17 +22,17 @@ func initLogger() {
 	logger = zapLogger
 }
 
-func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	ctx := context.Background()
 	var (
-		resp events.APIGatewayProxyResponse
+		resp *events.APIGatewayProxyResponse
 		err  error
 	)
 	switch os.Getenv("PLATFORM") {
 	case "github":
 		resp, err = github.Handler(ctx, req, logger)
 	default:
-		resp = events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+		resp = &events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
 		err = fmt.Errorf("unknown platform %s is setted", os.Getenv("PLATFORM"))
 	}
 	if err != nil {

@@ -14,10 +14,11 @@ type Comment struct {
 
 // PullRequest is a PR
 type PullRequest struct {
-	BaseBranch string
+	Number         int
+	BaseBranch     string
 	BaseCommitHash string
 	HeadCommitHash string
-	Labels map[string]constant.Label
+	Labels         map[string]constant.Label
 }
 
 // Clienter is interface of platform client
@@ -37,20 +38,17 @@ type Clienter interface {
 		ctx context.Context,
 		label constant.Label,
 	) error
-	AddLabelToOtherPRs(
+	AddLabelToOtherPR(
 		ctx context.Context,
 		label constant.Label,
+		number int,
 	) error
 	RemoveLabel(
 		ctx context.Context,
 		label constant.Label,
 	) error
 	GetPullRequest(ctx context.Context) (*PullRequest, error)
-	GetOpenPullRequestNumbersByLabel(
-		ctx context.Context,
-		label constant.Label,
-		excludeMySelf bool,
-	) ([]int, error)
+	GetOpenPullRequests(ctx context.Context) ([]PullRequest, error)
 	MergePullRequest(ctx context.Context, message string) error
 	SetStatus(
 		ctx context.Context,
