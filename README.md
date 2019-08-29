@@ -69,11 +69,11 @@ repo and write:discussion scopes are required.
 ### cdkbot.yml
 
 Put `cdkbot.yml` at the repository root. 
-cdkbot refer to the original cdkbot.yml and cdk.yml for security and authority reasons 
+cdkbot refer to the base branch's cdkbot.yml and cdk.json for security and authority reasons 
 so it's needed to be merged to apply the changes.
 
 ```
-cdkRoot: . # Relative path of the directory where cdk.yml exists
+cdkRoot: . # Relative path of the directory where cdk.json exists
 targets:
   # If any key is matched the PR base branch, run commands with contexts `-c key=value`.
   # If not, commands are not runned.

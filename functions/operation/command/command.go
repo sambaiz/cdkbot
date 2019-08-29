@@ -119,7 +119,7 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 	if err := r.git.Checkout(clonePath, "cdkbot.yml", pr.BaseBranch); err != nil {
 		return "", nil, nil, nil, err
 	}
-	if err := r.git.Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.yml", pr.BaseBranch); err != nil {
+	if err := r.git.Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch); err != nil {
 		return "", nil, nil, nil, err
 	}
 

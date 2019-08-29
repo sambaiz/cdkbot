@@ -1,4 +1,4 @@
-FROM cdkbot-npmbin
+FROM cdkbot-layer
 
 ARG GO_VERSION=1.12.7
 
