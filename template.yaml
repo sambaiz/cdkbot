@@ -50,8 +50,8 @@ Resources:
       Role: !GetAtt CDKRole.Arn
       ReservedConcurrentExecutions: 1
       Layers:
-        - !Ref NPMLayer
-        - "arn:aws:lambda:ap-northeast-1:553035198032:layer:git:6"
+        - !Ref CDKBotLayer
+        - "arn:aws:lambda:us-east-1:553035198032:layer:git:6"
       Environment:
         Variables:
           PLATFORM: !Ref Platform
@@ -118,11 +118,11 @@ Resources:
               - Effect: "Allow"
                 Action: "lambda:InvokeFunction"
                 Resource: !GetAtt OperationFunction.Arn
-  NPMLayer:
+  CDKBotLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: NPMLayer
-      Description: npm layer
+      LayerName: CDKBotLayer
+      Description: cdkbot layer
       ContentUri: './layer'
       CompatibleRuntimes:
         - go1.x
