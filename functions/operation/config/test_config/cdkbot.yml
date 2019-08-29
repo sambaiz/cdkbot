@@ -6,5 +6,7 @@ targets:
   master:
     contexts:
       env: prd
+preCommands:
+  - npm run build
 deployUsers:
   - sambaiz
