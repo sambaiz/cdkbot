@@ -1,6 +1,7 @@
 .PHONY: clean build package deploy publish install-tools lint test _test doc
 
 S3Bucket=cdkbot
+Region=us-east-1
 
 clean: 
 	rm -rf ./functions/operation/operation
@@ -15,7 +16,7 @@ build:
 	docker run cdkbot-layer cat /tmp/layer.zip > layer.zip && unzip layer.zip -d layer && rm layer.zip
 
 package: build
-	sam package --output-template-file packaged.yaml --s3-bucket ${S3Bucket} --region us-east-1
+	sam package --output-template-file packaged.yaml --s3-bucket ${S3Bucket} --region ${Region}
 
 deploy: package
 	aws cloudformation deploy --parameter-overrides \
@@ -26,7 +27,7 @@ deploy: package
 	--template-file packaged.yaml --stack-name cdkbot --capabilities CAPABILITY_IAM
 
 publish: package
-	sam publish -t packaged.yaml --region us-east-1
+	sam publish -t packaged.yaml --region ${Region}
 
 install-tools:
 	go get -u golang.org/x/lint/golint
