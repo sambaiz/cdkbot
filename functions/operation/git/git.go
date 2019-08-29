@@ -9,6 +9,7 @@ import (
 type Clienter interface {
 	Clone(path string, hash *string) error
 	Merge(path, branch string) error
+	Checkout(path, fileName, branch string) error
 }
 
 // Client is git client
@@ -19,7 +20,7 @@ type Client struct {
 // NewClient creates git client
 func NewClient(cloneURL string) *Client {
 	return &Client{
-		cloneURL,
+		cloneURL: cloneURL,
 	}
 }
 
@@ -46,16 +47,20 @@ func (c *Client) Clone(path string, hash *string) error {
 
 // Merge a branch
 func (c *Client) Merge(path, branch string) error {
-	cmd := exec.Command("git", "merge", branch)
+	cmd := exec.Command("git", "merge", branch, "-m", `"cdkbot merged"`)
 	cmd.Dir = path
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git merge failed: %s", err.Error())
 	}
-	// refer to the original cdkbot.yml
-	cmd = exec.Command("git", "checkout", branch, "cdkbot.yml")
+	return nil
+}
+
+// Checkout file of branch
+func (c *Client) Checkout(path, fileName, branch string) error {
+	cmd := exec.Command("git", "checkout", branch, fileName)
 	cmd.Dir = path
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git checkout cdkbot.yml failed: %s", err.Error())
+		return fmt.Errorf("git checkout %s of %s failed: %s", fileName, branch, err.Error())
 	}
 	return nil
 }

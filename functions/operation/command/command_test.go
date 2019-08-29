@@ -111,6 +111,9 @@ func constructSetupMock(
 		return
 	}
 
+	gitClient.EXPECT().Checkout(clonePath, "cdkbot.yml", pr.BaseBranch).Return(nil)
+	gitClient.EXPECT().Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.yml", pr.BaseBranch).Return(nil)
+
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 	cdkClient.EXPECT().Setup(cdkPath).Return(nil)
 
