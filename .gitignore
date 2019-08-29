@@ -3,4 +3,4 @@ functions/webhook/webhook
 private-key.pem
 packaged.yaml
 my-template.yaml
-npm-layer
+layer
