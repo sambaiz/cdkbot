@@ -30,6 +30,7 @@ func TestReaderRead(t *testing.T) {
 						},
 					},
 				},
+				PreCommands: []string{"npm run build"},
 				DeployUsers: []string{"sambaiz"},
 			},
 		},

@@ -8,6 +8,7 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"github.com/sambaiz/cdkbot/functions/operation/git"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	"os/exec"
 	"regexp"
 	"strings"
 )
@@ -125,6 +126,11 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 
 	if err := r.cdk.Setup(cdkPath); err != nil {
 		return "", nil, nil, nil, err
+	}
+
+	for _, preCommand := range cfg.PreCommands {
+		command := strings.Split(preCommand, " ")
+		exec.Command(command[0], command[1:]...)
 	}
 	return cdkPath, cfg, &target, pr, nil
 }

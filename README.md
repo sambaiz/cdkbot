@@ -83,6 +83,9 @@ targets:
   master:
     contexts:
       env: prd
+preCommands:
+  # Optional. Run before command.
+  - npm run build
 deployUsers:
   # Optional. If specified, only these users are allowed to deploy.
   # If not, all users are allowed to deploy.

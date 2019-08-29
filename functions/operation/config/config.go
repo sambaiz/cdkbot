@@ -18,6 +18,7 @@ type Reader struct{}
 type Config struct {
 	CDKRoot     string            `yaml:"cdkRoot"`
 	Targets     map[string]Target `yaml:"targets"`
+	PreCommands []string          `yaml:"preCommands"`
 	DeployUsers []string          `yaml:"deployUsers"`
 }
 
