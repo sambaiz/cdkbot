@@ -57,7 +57,6 @@ To prevent this, cdkbot takes measures these:
 Install from Serverless Application Repository
 
 - [us-east-1](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
-- [ap-northeast-1](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:ap-northeast-1:524580158183:applications~cdkbot) 
 
 or `make deploy S3Bucket=*** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
 

@@ -27,7 +27,6 @@ deploy: package
 
 publish: package
 	sam publish -t packaged.yaml --region us-east-1
-	sam publish -t packaged.yaml --region ap-northeast-1
 
 install-tools:
 	go get -u golang.org/x/lint/golint
