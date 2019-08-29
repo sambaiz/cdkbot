@@ -5,14 +5,14 @@ S3Bucket=cdkbot
 clean: 
 	rm -rf ./functions/operation/operation
 	rm -rf ./functions/webhook/webhook
-	rm -rf npm-layer
+	rm -rf layer
 	
 build:
 	GOOS=linux GOARCH=amd64 go build -o functions/operation/operation ./functions/operation
 	GOOS=linux GOARCH=amd64 go build -o functions/webhook/webhook ./functions/webhook
-	rm -rf npm-layer
-	docker build -t cdkbot-npmbin ./npm-lambda-layer
-	docker run cdkbot-npmbin cat /tmp/npm-layer.zip > npm-layer.zip && unzip npm-layer.zip -d npm-layer && rm npm-layer.zip
+	rm -rf layer
+	docker build -t cdkbot-layer ./lambda-layer
+	docker run cdkbot-layer cat /tmp/layer.zip > layer.zip && unzip layer.zip -d layer && rm layer.zip
 
 package: build
 	sam package --output-template-file packaged.yaml --s3-bucket ${S3Bucket} --region us-east-1
@@ -36,7 +36,7 @@ lint:
 	golint -set_exit_status $$(go list ./...)
 
 test:
-	docker build -t cdkbot-npmbin ./npm-lambda-layer
+	docker build -t cdkbot-layer ./lambda-layer
 	docker build -t cdkbot-test -f ./test/Dockerfile .
 	docker rm -f cdkbot-test || true
 	docker run -itd --name cdkbot-test cdkbot-test /bin/sh
