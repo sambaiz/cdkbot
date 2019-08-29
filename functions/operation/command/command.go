@@ -105,7 +105,6 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 			return "", nil, nil, nil, err
 		}
 	}
-
 	cfg, err := r.config.Read(fmt.Sprintf("%s/cdkbot.yml", clonePath))
 	if err != nil {
 		return "", nil, nil, nil, err
@@ -115,6 +114,15 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 	if !ok {
 		return cdkPath, cfg, nil, nil, nil
 	}
+
+	// override cdkbot.yml & cdk.yml of base branch
+	if err := r.git.Checkout(clonePath, "cdkbot.yml", pr.BaseBranch); err != nil {
+		return "", nil, nil, nil, err
+	}
+	if err := r.git.Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch); err != nil {
+		return "", nil, nil, nil, err
+	}
+
 	if err := r.cdk.Setup(cdkPath); err != nil {
 		return "", nil, nil, nil, err
 	}

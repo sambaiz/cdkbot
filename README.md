@@ -65,26 +65,15 @@ repo and write:discussion scopes are required.
 - GitHubWebhookSecret: Generate a random string.
 - Platform: Only github.
 
-### Repository settings
-
-Add a webhook at repository's settings. 
-
-- Payload URL: See CloudFormation Stack output
-- Content type: application/json 
-- Secret: same value of GitHubWebhookSecret
-- Event trigger: Pushes, Issue comments and Pull requests
-
-After the first run, enable "Require status checks to pass before merging" 
-in the branch protection rule to prevent merging before deploying (Recommended)
 
 ### cdkbot.yml
 
 Put `cdkbot.yml` at the repository root. 
-cdkbot refer to the original for security and authority reasons 
+cdkbot refer to the base branch's cdkbot.yml and cdk.json for security and authority reasons 
 so it's needed to be merged to apply the changes.
 
 ```
-cdkRoot: . # CDK directory path from repository root.
+cdkRoot: . # Relative path of the directory where cdk.json exists
 targets:
   # If any key is matched the PR base branch, run commands with contexts `-c key=value`.
   # If not, commands are not runned.
@@ -100,3 +89,14 @@ deployUsers:
   - sambaiz
 ```
 
+### Repository settings
+
+Add a webhook at repository's settings. 
+
+- Payload URL: See CloudFormation Stack output
+- Content type: application/json 
+- Secret: same value of GitHubWebhookSecret
+- Event trigger: Pushes, Issue comments and Pull requests
+
+After the first run, enable "Require status checks to pass before merging" 
+in the branch protection rule to prevent merging before deploying (Recommended)
