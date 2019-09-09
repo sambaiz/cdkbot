@@ -25,7 +25,7 @@ func (r *Runner) Diff(
 		if err != nil {
 			return nil, err
 		}
-		diff, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
+		diff, hasDiff, diffErr := r.cdk.Diff(cdkPath, "", target.Contexts)
 		if err := r.platform.CreateComment(
 			ctx,
 			fmt.Sprintf("### cdk diff\n```\n%s\n```", diff),
@@ -36,11 +36,10 @@ func (r *Runner) Diff(
 		if err := r.deleteDiffCommentsUpToPreviousDeploy(ctx, comments); err != nil {
 			return nil, err
 		}
-		if err := r.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
-			return nil, err
+		if diffErr != nil {
+			return newResultState(constant.StateNeedDeploy, "Fix codes"), nil
 		}
-
-		if err != nil {
+		if err := r.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
 			return nil, err
 		}
 		if hasDiff {

@@ -33,20 +33,30 @@ func (r *Runner) Rollback(
 				return nil, err
 			}
 		}
-		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
-		if err != nil {
-			return nil, err
-		}
-		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
+		result, deployErr := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		message := "Rollback is completed."
-		if hasDiff {
-			message = "To be continued."
+		var (
+			hasDiff bool
+			diffErr error
+		)
+		if deployErr != nil {
+			message = deployErr.Error()
+		} else {
+			_, hasDiff, diffErr = r.cdk.Diff(cdkPath, "", target.Contexts)
+			if diffErr != nil {
+				message = diffErr.Error()
+			} else if hasDiff {
+				message = "To be continued."
+			}
 		}
 		if err := r.platform.CreateComment(
 			ctx,
 			fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message),
 		); err != nil {
 			return nil, err
+		}
+		if deployErr != nil || diffErr != nil {
+			return newResultState(constant.StateNeedDeploy, "Fix codes"), nil
 		}
 		if !hasDiff {
 			if err := r.platform.RemoveLabel(ctx, constant.LabelDeployed); err != nil {

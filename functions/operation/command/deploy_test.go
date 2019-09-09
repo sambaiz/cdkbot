@@ -9,6 +9,7 @@ import (
 
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 
+	"errors"
 	"github.com/golang/mock/gomock"
 	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
 	"github.com/sambaiz/cdkbot/functions/operation/config"
@@ -19,17 +20,23 @@ import (
 )
 
 func TestRunner_Deploy(t *testing.T) {
-	tests := []struct {
+	type expected struct {
+		comment  string
+		outState *resultState
+		isError  bool
+	}
+	type test struct {
 		title         string
 		inUserName    string
 		inStacks      []string
 		cfg           config.Config
 		baseBranch    string
-		labels        map[string]constant.Label
+		deployError   error
 		resultHasDiff bool
-		retState      *resultState
-		isError       bool
-	}{
+		diffError     error
+		expected      expected
+	}
+	tests := []test{
 		{
 			title:      "no targets are matched",
 			inUserName: "sambaiz",
@@ -40,12 +47,15 @@ func TestRunner_Deploy(t *testing.T) {
 					"master": {},
 				},
 			},
-			baseBranch:    "develop",
-			resultHasDiff: false,
-			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
+			baseBranch: "develop",
+			expected: expected{
+				comment:  "### cdk deploy\n```\nresult\n```\n",
+				outState: newResultState(constant.StateMergeReady, "No targets are matched"),
+				isError:  false,
+			},
 		},
 		{
-			title:      "has no diffs",
+			title:      "success and has no diffs",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -60,28 +70,68 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: false,
-			retState:      newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+			expected: expected{
+				comment:  "### cdk deploy\n```\nresult\n```\n",
+				outState: newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+				isError:  false,
+			},
 		},
 		{
-			title:      "has diffs",
+			title:      "success and has diffs",
 			inUserName: "sambaiz",
 			inStacks:   []string{"Stack1", "Stack2"},
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
-					"develop": {
-						Contexts: map[string]string{
-							"env": "stg",
-						},
-					},
+					"develop": {},
 				},
 			},
 			baseBranch:    "develop",
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateNeedDeploy, "Fix if needed and complete deploy."),
+			expected: expected{
+				comment:  "### cdk deploy\n```\nresult\n```\n",
+				outState: newResultState(constant.StateNeedDeploy, "Go ahead with deploy."),
+				isError:  false,
+			},
 		},
 		{
-			title:      "user is not allowed to deploy",
+			title:      "cdk deploy error",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {},
+				},
+			},
+			baseBranch:  "develop",
+			deployError: errors.New("cdk deploy error"),
+			expected: expected{
+				comment:  "### cdk deploy\n```\nresult\n```\ncdk deploy error",
+				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				isError:  false,
+			},
+		},
+		{
+			title:      "cdk diff error",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {},
+				},
+			},
+			baseBranch: "develop",
+			diffError:  errors.New("cdk diff error"),
+			expected: expected{
+				comment:  "### cdk deploy\n```\nresult\n```\ncdk diff error",
+				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				isError:  false,
+			},
+		},
+		{
+			title:      "the user is not allowed to deploy",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -93,20 +143,33 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+			expected: expected{
+				outState: newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				isError:  false,
+			},
+		},
+		{
+			title:      "other open PR is been deploying",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"branch_deploying": {},
+				},
+			},
+			baseBranch: "branch_deploying",
+			expected: expected{
+				outState: newResultState(constant.StateNeedDeploy, "deployed PR #4 is still opened. First /deploy and merge it, or /rollback."),
+				isError:  false,
+			},
 		},
 	}
 
 	constructRunnerWithMock := func(
 		ctx context.Context,
 		ctrl *gomock.Controller,
-		userName string,
-		stacks []string,
-		cfg config.Config,
-		baseBranch string,
-		labels map[string]constant.Label,
-		resultHasDiff bool,
-		retState *resultState,
+		test test,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -114,14 +177,12 @@ func TestRunner_Deploy(t *testing.T) {
 		cdkClient := cdkMock.NewMockClienter(ctrl)
 
 		// hasOutdatedDiffs()
-		platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{
-			Labels: labels,
-		}, nil)
+		platformClient.EXPECT().GetPullRequest(ctx).Return(&platform.PullRequest{}, nil)
 
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, test.expected.outState.state, test.expected.outState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -131,25 +192,16 @@ func TestRunner_Deploy(t *testing.T) {
 			configClient,
 			cdkClient,
 			true,
-			cfg,
+			test.cfg,
 			&platform.PullRequest{
 				Number:         1,
-				BaseBranch:     baseBranch,
+				BaseBranch:     test.baseBranch,
 				BaseCommitHash: "basehash",
 				HeadCommitHash: "headhash",
-				Labels:         labels,
 			},
 		)
-		target, ok := cfg.Targets[baseBranch]
-		if !ok {
-			return &Runner{
-				platform: platformClient,
-				git:      gitClient,
-				config:   configClient,
-				cdk:      cdkClient,
-			}
-		}
-		if !cfg.IsUserAllowedDeploy(userName) {
+		target, ok := test.cfg.Targets[test.baseBranch]
+		if !ok || !test.cfg.IsUserAllowedDeploy(test.inUserName) {
 			return &Runner{
 				platform: platformClient,
 				git:      gitClient,
@@ -161,33 +213,56 @@ func TestRunner_Deploy(t *testing.T) {
 		openPRs := []platform.PullRequest{
 			{
 				Number:     1,
-				BaseBranch: baseBranch,
+				BaseBranch: test.baseBranch,
 			},
 			{
 				Number:     2,
-				BaseBranch: baseBranch,
+				BaseBranch: test.baseBranch,
 			},
 			{
 				Number:     3,
-				BaseBranch: "not" + baseBranch,
+				BaseBranch: "not" + test.baseBranch,
+			},
+			{
+				Number:     4,
+				BaseBranch:  "branch_deploying",
+				Labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			},
 		}
 		platformClient.EXPECT().GetOpenPullRequests(ctx).Return(openPRs, nil)
-		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
-		if len(stacks) == 0 {
-			stacks = []string{"Stack1", "Stack2"}
-			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
+		if test.baseBranch == "branch_deploying" {
+			return &Runner{
+				platform: platformClient,
+				git:      gitClient,
+				config:   configClient,
+				cdk:      cdkClient,
+			}
+		}
+
+		cdkPath := fmt.Sprintf("%s/%s", clonePath, test.cfg.CDKRoot)
+		if len(test.inStacks) == 0 {
+			test.inStacks = []string{"Stack1", "Stack2"}
+			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(test.inStacks, nil)
 		}
 		result := "result"
-		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
-		platformClient.EXPECT().AddLabel(ctx, constant.LabelDeployed).Return(nil)
-		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
-		message := "Success :tada:"
-		if resultHasDiff {
-			message = "To be continued."
+		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(test.inStacks, " "), target.Contexts).Return(result, test.deployError)
+		if test.deployError == nil {
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", test.resultHasDiff, test.diffError)
 		}
-		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message))
-		if !resultHasDiff {
+
+		platformClient.EXPECT().AddLabel(ctx, constant.LabelDeployed).Return(nil)
+		platformClient.EXPECT().CreateComment(ctx, test.expected.comment)
+
+		if test.deployError != nil || test.diffError != nil {
+			return &Runner{
+				platform: platformClient,
+				git:      gitClient,
+				config:   configClient,
+				cdk:      cdkClient,
+			}
+		}
+
+		if !test.resultHasDiff {
 			platformClient.EXPECT().MergePullRequest(ctx, "automatically merged by cdkbot").Return(nil)
 			// add label to PR with not same number and same base branch
 			platformClient.EXPECT().AddLabelToOtherPR(ctx, constant.LabelOutdatedDiff, openPRs[1].Number).Return(nil)
@@ -206,17 +281,8 @@ func TestRunner_Deploy(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			runner := constructRunnerWithMock(
-				ctx,
-				ctrl,
-				test.inUserName,
-				test.inStacks,
-				test.cfg,
-				test.baseBranch,
-				test.labels,
-				test.resultHasDiff,
-				test.retState)
-			assert.Equal(t, test.isError,
+			runner := constructRunnerWithMock(ctx, ctrl, test)
+			assert.Equal(t, test.expected.isError,
 				runner.Deploy(ctx, test.inUserName, test.inStacks) != nil,
 			)
 		})

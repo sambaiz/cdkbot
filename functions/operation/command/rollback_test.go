@@ -9,6 +9,7 @@ import (
 
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 
+	"errors"
 	"github.com/golang/mock/gomock"
 	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
 	"github.com/sambaiz/cdkbot/functions/operation/config"
@@ -26,7 +27,9 @@ func TestRunner_Rollback(t *testing.T) {
 		cfg           config.Config
 		baseBranch    string
 		labels        map[string]constant.Label
+		deployError   error
 		resultHasDiff bool
+		diffError     error
 		retState      *resultState
 		isError       bool
 	}{
@@ -84,6 +87,44 @@ func TestRunner_Rollback(t *testing.T) {
 			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
+			title:      "cdk deploy error",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch:  "develop",
+			labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
+			deployError: errors.New("cdk deploy error"),
+			retState:    newResultState(constant.StateNeedDeploy, "Fix codes"),
+		},
+		{
+			title:      "cdk diff error",
+			inUserName: "sambaiz",
+			inStacks:   []string{},
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch: "develop",
+			labels:     map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
+			diffError:  errors.New("cdk diff error"),
+			retState:   newResultState(constant.StateNeedDeploy, "Fix codes"),
+		},
+		{
 			title:      "user is not allowed to deploy",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
@@ -124,7 +165,9 @@ func TestRunner_Rollback(t *testing.T) {
 		cfg config.Config,
 		baseBranch string,
 		labels map[string]constant.Label,
+		deployError error,
 		resultHasDiff bool,
+		diffError error,
 		retState *resultState,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
@@ -177,13 +220,27 @@ func TestRunner_Rollback(t *testing.T) {
 			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
 		}
 		result := "result"
-		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, nil)
-		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff)
 		message := "Rollback is completed."
-		if resultHasDiff {
-			message = "To be continued."
+		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, deployError)
+		if deployError != nil {
+			message = deployError.Error()
+		} else {
+			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff, diffError)
+			if diffError != nil {
+				message = diffError.Error()
+			} else if resultHasDiff {
+				message = "To be continued."
+			}
 		}
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message))
+		if deployError != nil || diffError != nil {
+			return &Runner{
+				platform: platformClient,
+				git:      gitClient,
+				config:   configClient,
+				cdk:      cdkClient,
+			}
+		}
 		if !resultHasDiff {
 			platformClient.EXPECT().RemoveLabel(ctx, constant.LabelDeployed).Return(nil)
 		}
@@ -209,7 +266,9 @@ func TestRunner_Rollback(t *testing.T) {
 				test.cfg,
 				test.baseBranch,
 				test.labels,
+				test.deployError,
 				test.resultHasDiff,
+				test.diffError,
 				test.retState)
 			assert.Equal(t, test.isError,
 				runner.Rollback(ctx, test.inUserName, test.inStacks) != nil,

@@ -7,6 +7,7 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"testing"
 
+	"errors"
 	"github.com/golang/mock/gomock"
 	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
 	"github.com/sambaiz/cdkbot/functions/operation/config"
@@ -22,6 +23,7 @@ func TestRunner_Diff(t *testing.T) {
 		cfg           config.Config
 		baseBranch    string
 		resultHasDiff bool
+		diffError     error
 		retState      *resultState
 		isError       bool
 	}{
@@ -54,6 +56,22 @@ func TestRunner_Diff(t *testing.T) {
 			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
 		},
 		{
+			title: "cdk diff error",
+			cfg: config.Config{
+				CDKRoot: ".",
+				Targets: map[string]config.Target{
+					"develop": {
+						Contexts: map[string]string{
+							"env": "stg",
+						},
+					},
+				},
+			},
+			baseBranch: "develop",
+			diffError:  errors.New("cdk diff error"),
+			retState:   newResultState(constant.StateNeedDeploy, "Fix codes"),
+		},
+		{
 			title: "has no diffs",
 			cfg: config.Config{
 				CDKRoot: ".",
@@ -77,6 +95,7 @@ func TestRunner_Diff(t *testing.T) {
 		cfg config.Config,
 		baseBranch string,
 		resultHasDiff bool,
+		diffError error,
 		retState *resultState,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
@@ -119,8 +138,16 @@ func TestRunner_Diff(t *testing.T) {
 		platformClient.EXPECT().ListComments(ctx).Return([]platform.Comment{}, nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		result := "result"
-		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff)
+		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff, diffError)
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk diff\n```\n%s\n```", result)).Return(nil)
+		if diffError != nil {
+			return &Runner{
+				platform: platformClient,
+				git:      gitClient,
+				config:   configClient,
+				cdk:      cdkClient,
+			}
+		}
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelOutdatedDiff).Return(nil)
 
 		return &Runner{
@@ -142,6 +169,7 @@ func TestRunner_Diff(t *testing.T) {
 				test.cfg,
 				test.baseBranch,
 				test.resultHasDiff,
+				test.diffError,
 				test.retState)
 			assert.Equal(t, test.isError, runner.Diff(ctx) != nil)
 		})
