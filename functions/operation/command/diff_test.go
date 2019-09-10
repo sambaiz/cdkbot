@@ -60,7 +60,7 @@ func TestRunner_Diff(t *testing.T) {
 			baseBranch:    "develop",
 			resultHasDiff: true,
 			expected: expected{
-				outState: newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
 				isError: false,
 			},
 		},
@@ -79,7 +79,7 @@ func TestRunner_Diff(t *testing.T) {
 			baseBranch: "develop",
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
-				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError: false,
 			},
 		},

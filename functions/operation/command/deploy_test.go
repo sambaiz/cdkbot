@@ -90,7 +90,7 @@ func TestRunner_Deploy(t *testing.T) {
 			resultHasDiff: true,
 			expected: expected{
 				comment:  "### cdk deploy\n```\nresult\n```\n",
-				outState: newResultState(constant.StateNeedDeploy, "Go ahead with deploy."),
+				outState: newResultState(constant.StateNotMergeReady, "Go ahead with deploy."),
 				isError:  false,
 			},
 		},
@@ -108,7 +108,7 @@ func TestRunner_Deploy(t *testing.T) {
 			deployError: errors.New("cdk deploy error"),
 			expected: expected{
 				comment:  "### cdk deploy\n```\nresult\n```\ncdk deploy error",
-				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
 		},
@@ -126,7 +126,7 @@ func TestRunner_Deploy(t *testing.T) {
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
 				comment:  "### cdk deploy\n```\nresult\n```\ncdk diff error",
-				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
 		},
@@ -144,7 +144,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch:    "develop",
 			resultHasDiff: true,
 			expected: expected{
-				outState: newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				outState: newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
 				isError:  false,
 			},
 		},
@@ -160,7 +160,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			baseBranch: "branch_deploying",
 			expected: expected{
-				outState: newResultState(constant.StateNeedDeploy, "deployed PR #4 is still opened. First /deploy and merge it, or /rollback."),
+				outState: newResultState(constant.StateNotMergeReady, "deployed PR #4 is still opened. First /deploy and merge it, or /rollback."),
 				isError:  false,
 			},
 		},

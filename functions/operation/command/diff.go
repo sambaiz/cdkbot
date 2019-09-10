@@ -37,13 +37,13 @@ func (r *Runner) Diff(
 			return nil, err
 		}
 		if diffErr != nil {
-			return newResultState(constant.StateNeedDeploy, "Fix codes"), nil
+			return newResultState(constant.StateNotMergeReady, "Fix codes"), nil
 		}
 		if err := r.platform.RemoveLabel(ctx, constant.LabelOutdatedDiff); err != nil {
 			return nil, err
 		}
 		if hasDiff {
-			return newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"), nil
+			return newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"), nil
 		}
 		return newResultState(constant.StateMergeReady, "No diffs. Let's merge!"), nil
 	})

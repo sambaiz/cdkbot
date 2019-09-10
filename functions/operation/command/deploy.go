@@ -29,7 +29,7 @@ func (r *Runner) Deploy(
 			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
-			return newResultState(constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
+			return newResultState(constant.StateNotMergeReady, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
 		}
 		openPRs, err := r.platform.GetOpenPullRequests(ctx)
 		if err != nil {
@@ -37,7 +37,7 @@ func (r *Runner) Deploy(
 		}
 		if number, exists := existsOtherDeployedSameBasePRs(openPRs, pr); exists {
 			return newResultState(
-				constant.StateNeedDeploy,
+				constant.StateNotMergeReady,
 				fmt.Sprintf("deployed PR #%d is still opened. First /deploy and merge it, or /rollback.", number),
 			), nil
 		}
@@ -70,7 +70,7 @@ func (r *Runner) Deploy(
 			return nil, err
 		}
 		if errMessage != "" {
-			return newResultState(constant.StateNeedDeploy, "Fix codes"), nil
+			return newResultState(constant.StateNotMergeReady, "Fix codes"), nil
 		}
 		if !hasDiff {
 			if err := r.platform.MergePullRequest(ctx, "automatically merged by cdkbot"); err != nil {
@@ -92,7 +92,7 @@ func (r *Runner) Deploy(
 			}
 			return newResultState(constant.StateMergeReady, "No diffs. Let's merge!"), nil
 		}
-		return newResultState(constant.StateNeedDeploy, "Go ahead with deploy."), nil
+		return newResultState(constant.StateNotMergeReady, "Go ahead with deploy."), nil
 	})
 }
 

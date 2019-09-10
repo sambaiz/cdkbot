@@ -8,8 +8,8 @@ const (
 	StateRunning State = iota + 1
 	// StateMergeReady expresses the PR is ready to merge
 	StateMergeReady
-	// StateNeedDeploy expresses the PR needs to deploy
-	StateNeedDeploy
+	// StateNotMergeReady expresses the PR is not ready to merge
+	StateNotMergeReady
 	// StateError expresses error occurred
 	StateError
 )

@@ -75,7 +75,7 @@ func TestRunner_Rollback(t *testing.T) {
 			resultHasDiff: false,
 			expected: expected{
 				comment: "### cdk deploy (rollback)\n```\nresult\n```\nRollback is completed.",
-				outState:     newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				outState:     newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
 				isError: false,
 			},
 		},
@@ -98,7 +98,7 @@ func TestRunner_Rollback(t *testing.T) {
 			resultHasDiff: true,
 			expected: expected{
 				comment: "### cdk deploy (rollback)\n```\nresult\n```\nTo be continued.",
-				outState:     newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				outState:     newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
 				isError: false,
 			},
 		},
@@ -121,7 +121,7 @@ func TestRunner_Rollback(t *testing.T) {
 			deployError: errors.New("cdk deploy error"),
 			expected: expected{
 				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk deploy error",
-				outState:     newResultState(constant.StateNeedDeploy, "Fix codes"),
+				outState:     newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError: false,
 			},
 		},
@@ -144,7 +144,7 @@ func TestRunner_Rollback(t *testing.T) {
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
 				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk diff error",
-				outState:     newResultState(constant.StateNeedDeploy, "Fix codes"),
+				outState:     newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError: false,
 			},
 		},
@@ -164,7 +164,7 @@ func TestRunner_Rollback(t *testing.T) {
 			resultHasDiff: true,
 			expected: expected{
 				comment: "",
-				outState:     newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				outState:     newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
 				isError: false,
 			},
 		},
@@ -183,7 +183,7 @@ func TestRunner_Rollback(t *testing.T) {
 			resultHasDiff: true,
 			expected: expected{
 				comment: "",
-				outState:     newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				outState:     newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
 				isError: false,
 			},
 		},
