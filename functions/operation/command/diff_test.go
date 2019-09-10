@@ -18,17 +18,20 @@ import (
 )
 
 func TestRunner_Diff(t *testing.T) {
+	type expected struct {
+		outState *resultState
+		isError  bool
+	}
 	tests := []struct {
 		title         string
 		cfg           config.Config
 		baseBranch    string
 		resultHasDiff bool
 		diffError     error
-		retState      *resultState
-		isError       bool
+		expected expected
 	}{
 		{
-			title: "no targets are matched",
+			title: "no_targets_are_matched",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -37,10 +40,13 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: false,
-			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
+			expected: expected{
+				outState: newResultState(constant.StateMergeReady, "No targets are matched"),
+				isError: false,
+			},
 		},
 		{
-			title: "has diffs",
+			title: "has_diffs",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -53,10 +59,13 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+			expected: expected{
+				outState: newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				isError: false,
+			},
 		},
 		{
-			title: "cdk diff error",
+			title: "cdk_diff_error",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -69,10 +78,13 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch: "develop",
 			diffError:  errors.New("cdk diff error"),
-			retState:   newResultState(constant.StateNeedDeploy, "Fix codes"),
+			expected: expected{
+				outState: newResultState(constant.StateNeedDeploy, "Fix codes"),
+				isError: false,
+			},
 		},
 		{
-			title: "has no diffs",
+			title: "has_no_diffs",
 			cfg: config.Config{
 				CDKRoot: ".",
 				Targets: map[string]config.Target{
@@ -85,7 +97,10 @@ func TestRunner_Diff(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: false,
-			retState:      newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+			expected: expected{
+				outState: newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
+				isError: false,
+			},
 		},
 	}
 
@@ -96,7 +111,7 @@ func TestRunner_Diff(t *testing.T) {
 		baseBranch string,
 		resultHasDiff bool,
 		diffError error,
-		retState *resultState,
+		expected expected,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -106,7 +121,7 @@ func TestRunner_Diff(t *testing.T) {
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, expected.outState.state, expected.outState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -170,8 +185,8 @@ func TestRunner_Diff(t *testing.T) {
 				test.baseBranch,
 				test.resultHasDiff,
 				test.diffError,
-				test.retState)
-			assert.Equal(t, test.isError, runner.Diff(ctx) != nil)
+				test.expected)
+			assert.Equal(t, test.expected.isError, runner.Diff(ctx) != nil)
 		})
 	}
 }
@@ -186,7 +201,7 @@ func TestRunner_deleteDiffCommentsUpToPreviousDeploy(t *testing.T) {
 		isError            bool
 	}{
 		{
-			title: "Delete diff comments up to previous deploy",
+			title: "Delete_diff_comments_up_to_previous_deploy",
 			in: []platform.Comment{
 				{
 					ID:   1,
@@ -200,7 +215,7 @@ func TestRunner_deleteDiffCommentsUpToPreviousDeploy(t *testing.T) {
 			expectedDeletedIDs: []int64{1, 2},
 		},
 		{
-			title: "Don't delete anything other than diff comments",
+			title: "Don't_delete_anything_other_than_diff_comments",
 			in: []platform.Comment{
 				{
 					ID:   1,
@@ -214,7 +229,7 @@ func TestRunner_deleteDiffCommentsUpToPreviousDeploy(t *testing.T) {
 			expectedDeletedIDs: []int64{2},
 		},
 		{
-			title: "Don't delete diff comments before previous deploy",
+			title: "Don't_delete_diff_comments_before_previous_deploy",
 			in: []platform.Comment{
 				{
 					ID:   1,

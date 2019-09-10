@@ -38,7 +38,7 @@ func TestRunner_Deploy(t *testing.T) {
 	}
 	tests := []test{
 		{
-			title:      "no targets are matched",
+			title:      "no_targets_are_matched",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -77,7 +77,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 		},
 		{
-			title:      "success and has diffs",
+			title:      "success_and_has_diffs",
 			inUserName: "sambaiz",
 			inStacks:   []string{"Stack1", "Stack2"},
 			cfg: config.Config{
@@ -95,7 +95,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 		},
 		{
-			title:      "cdk deploy error",
+			title:      "cdk_deploy_error",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -113,7 +113,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 		},
 		{
-			title:      "cdk diff error",
+			title:      "cdk_diff_error",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -131,7 +131,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 		},
 		{
-			title:      "the user is not allowed to deploy",
+			title:      "the_user_is_not_allowed_to_deploy",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -149,7 +149,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 		},
 		{
-			title:      "other open PR is been deploying",
+			title:      "other_open_PR_is_been_deploying",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -302,7 +302,7 @@ func TestRunner_hasOutdatedDiff(t *testing.T) {
 			out:    true,
 		},
 		{
-			title:  "doesn't have",
+			title:  "doesn't_have",
 			labels: map[string]constant.Label{},
 			out:    false,
 		},
@@ -353,7 +353,7 @@ func TestExistsOtherDeployedSameBasePRs(t *testing.T) {
 			outExists: true,
 		},
 		{
-			title: "base branch is not same",
+			title: "base_branch_is_not_same",
 			inOtherPRs: []platform.PullRequest{
 				{
 					Number:     2,
@@ -370,7 +370,7 @@ func TestExistsOtherDeployedSameBasePRs(t *testing.T) {
 			outExists: false,
 		},
 		{
-			title: "number is same",
+			title: "number_is_same",
 			inOtherPRs: []platform.PullRequest{
 				{
 					Number:     1,

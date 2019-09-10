@@ -29,7 +29,7 @@ func TestClientDiff(t *testing.T) {
 		expected expected
 	}{
 		{
-			title:    "has no diff",
+			title:    "has_no_diff",
 			inStacks: "stack1 stack2",
 			expected: expected{
 				outResult:  "diff: diff stack1 stack2 -c env=stg",
@@ -38,7 +38,7 @@ func TestClientDiff(t *testing.T) {
 			},
 		},
 		{
-			title:    "has diff",
+			title:    "has_diff",
 			inStacks: "diffStack",
 			expected: expected{
 				outResult:  "diff: diff diffStack -c env=stg",

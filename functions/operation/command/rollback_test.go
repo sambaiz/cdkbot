@@ -20,6 +20,11 @@ import (
 )
 
 func TestRunner_Rollback(t *testing.T) {
+	type expected struct {
+		comment  string
+		outState *resultState
+		isError  bool
+	}
 	tests := []struct {
 		title         string
 		inUserName    string
@@ -30,11 +35,10 @@ func TestRunner_Rollback(t *testing.T) {
 		deployError   error
 		resultHasDiff bool
 		diffError     error
-		retState      *resultState
-		isError       bool
+		expected      expected
 	}{
 		{
-			title:      "no targets are matched",
+			title:      "no_targets_are_matched",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -46,10 +50,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:    "develop",
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: false,
-			retState:      newResultState(constant.StateMergeReady, "No targets are matched"),
+			expected: expected{
+				comment: "",
+				outState:      newResultState(constant.StateMergeReady, "No targets are matched"),
+				isError: false,
+			},
 		},
 		{
-			title:      "has no diffs",
+			title:      "has_no_diffs",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -65,10 +73,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:    "develop",
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: false,
-			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+			expected: expected{
+				comment: "### cdk deploy (rollback)\n```\nresult\n```\nRollback is completed.",
+				outState:     newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				isError: false,
+			},
 		},
 		{
-			title:      "has diffs",
+			title:      "has_diffs",
 			inUserName: "sambaiz",
 			inStacks:   []string{"Stack1", "Stack2"},
 			cfg: config.Config{
@@ -84,10 +96,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:    "develop",
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+			expected: expected{
+				comment: "### cdk deploy (rollback)\n```\nresult\n```\nTo be continued.",
+				outState:     newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"),
+				isError: false,
+			},
 		},
 		{
-			title:      "cdk deploy error",
+			title:      "cdk_deploy_error",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -103,10 +119,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:  "develop",
 			labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			deployError: errors.New("cdk deploy error"),
-			retState:    newResultState(constant.StateNeedDeploy, "Fix codes"),
+			expected: expected{
+				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk deploy error",
+				outState:     newResultState(constant.StateNeedDeploy, "Fix codes"),
+				isError: false,
+			},
 		},
 		{
-			title:      "cdk diff error",
+			title:      "cdk_diff_error",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -122,10 +142,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch: "develop",
 			labels:     map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			diffError:  errors.New("cdk diff error"),
-			retState:   newResultState(constant.StateNeedDeploy, "Fix codes"),
+			expected: expected{
+				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk diff error",
+				outState:     newResultState(constant.StateNeedDeploy, "Fix codes"),
+				isError: false,
+			},
 		},
 		{
-			title:      "user is not allowed to deploy",
+			title:      "user_is_not_allowed_to_deploy",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -138,10 +162,14 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:    "develop",
 			labels:        map[string]constant.Label{},
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+			expected: expected{
+				comment: "",
+				outState:     newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				isError: false,
+			},
 		},
 		{
-			title:      "PR is not deployed",
+			title:      "PR_is_not_deployed",
 			inUserName: "sambaiz",
 			inStacks:   []string{},
 			cfg: config.Config{
@@ -153,7 +181,11 @@ func TestRunner_Rollback(t *testing.T) {
 			},
 			baseBranch:    "develop",
 			resultHasDiff: true,
-			retState:      newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+			expected: expected{
+				comment: "",
+				outState:     newResultState(constant.StateError, "user sambaiz is not allowed to deploy"),
+				isError: false,
+			},
 		},
 	}
 
@@ -168,7 +200,7 @@ func TestRunner_Rollback(t *testing.T) {
 		deployError error,
 		resultHasDiff bool,
 		diffError error,
-		retState *resultState,
+		expected expected,
 	) *Runner {
 		platformClient := platformMock.NewMockClienter(ctrl)
 		gitClient := gitMock.NewMockClienter(ctrl)
@@ -178,7 +210,7 @@ func TestRunner_Rollback(t *testing.T) {
 		// updateStatus()
 		platformClient.EXPECT().SetStatus(ctx, constant.StateRunning, "").Return(nil)
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelRunning).Return(nil)
-		platformClient.EXPECT().SetStatus(ctx, retState.state, retState.description).Return(nil)
+		platformClient.EXPECT().SetStatus(ctx, expected.outState.state, expected.outState.description).Return(nil)
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelRunning).Return(nil)
 
 		constructSetupMock(
@@ -220,19 +252,11 @@ func TestRunner_Rollback(t *testing.T) {
 			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
 		}
 		result := "result"
-		message := "Rollback is completed."
 		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, deployError)
-		if deployError != nil {
-			message = deployError.Error()
-		} else {
+		if deployError == nil {
 			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff, diffError)
-			if diffError != nil {
-				message = diffError.Error()
-			} else if resultHasDiff {
-				message = "To be continued."
-			}
 		}
-		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message))
+		platformClient.EXPECT().CreateComment(ctx, expected.comment)
 		if deployError != nil || diffError != nil {
 			return &Runner{
 				platform: platformClient,
@@ -269,8 +293,8 @@ func TestRunner_Rollback(t *testing.T) {
 				test.deployError,
 				test.resultHasDiff,
 				test.diffError,
-				test.retState)
-			assert.Equal(t, test.isError,
+				test.expected)
+			assert.Equal(t, test.expected.isError,
 				runner.Rollback(ctx, test.inUserName, test.inStacks) != nil,
 			)
 		})
