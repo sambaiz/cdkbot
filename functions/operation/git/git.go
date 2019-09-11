@@ -32,8 +32,9 @@ func (c *Client) Clone(path string, hash *string) error {
 	if err := exec.Command("mkdir", "-p", path).Run(); err != nil {
 		return err
 	}
-	if err := exec.Command("git", "clone", c.cloneURL, path).Run(); err != nil {
-		return fmt.Errorf("git clone failed: %s", err.Error())
+	cmd := exec.Command("git", "clone", c.cloneURL, path)
+	if out, _ := cmd.CombinedOutput(); cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git clone failed: %s", string(out))
 	}
 	if hash != nil {
 		cmd := exec.Command("git", "checkout", *hash)
@@ -49,8 +50,8 @@ func (c *Client) Clone(path string, hash *string) error {
 func (c *Client) Merge(path, branch string) error {
 	cmd := exec.Command("git", "merge", branch, "-m", `"cdkbot merged"`)
 	cmd.Dir = path
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git merge failed: %s", err.Error())
+	if out, _ := cmd.CombinedOutput(); cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git merge failed: %s", string(out))
 	}
 	return nil
 }
@@ -59,8 +60,8 @@ func (c *Client) Merge(path, branch string) error {
 func (c *Client) Checkout(path, fileName, branch string) error {
 	cmd := exec.Command("git", "checkout", branch, fileName)
 	cmd.Dir = path
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git checkout %s of %s failed: %s", fileName, branch, err.Error())
+	if out, _ := cmd.CombinedOutput(); cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git checkout %s of %s failed: %s", fileName, branch, string(out))
 	}
 	return nil
 }

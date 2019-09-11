@@ -22,10 +22,10 @@ func (r *Runner) Rollback(
 			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
-			return newResultState(constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
+			return newResultState(constant.StateNotMergeReady, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
 		}
 		if _, ok := pr.Labels[constant.LabelDeployed.Name]; !ok {
-			return newResultState(constant.StateError, "PR is not deployed"), nil
+			return newResultState(constant.StateNotMergeReady, "PR is not deployed"), nil
 		}
 		if len(stacks) == 0 {
 			stacks, err = r.cdk.List(cdkPath, target.Contexts)
@@ -33,14 +33,21 @@ func (r *Runner) Rollback(
 				return nil, err
 			}
 		}
-		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
-		if err != nil {
-			return nil, err
-		}
-		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
+		result, deployErr := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
 		message := "Rollback is completed."
-		if hasDiff {
-			message = "To be continued."
+		var (
+			hasDiff bool
+			diffErr error
+		)
+		if deployErr != nil {
+			message = deployErr.Error()
+		} else {
+			_, hasDiff, diffErr = r.cdk.Diff(cdkPath, "", target.Contexts)
+			if diffErr != nil {
+				message = diffErr.Error()
+			} else if hasDiff {
+				message = "To be continued."
+			}
 		}
 		if err := r.platform.CreateComment(
 			ctx,
@@ -48,11 +55,14 @@ func (r *Runner) Rollback(
 		); err != nil {
 			return nil, err
 		}
+		if deployErr != nil || diffErr != nil {
+			return newResultState(constant.StateNotMergeReady, "Fix codes"), nil
+		}
 		if !hasDiff {
 			if err := r.platform.RemoveLabel(ctx, constant.LabelDeployed); err != nil {
 				return nil, err
 			}
 		}
-		return newResultState(constant.StateNeedDeploy, "Run /deploy after reviewed"), nil
+		return newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"), nil
 	})
 }

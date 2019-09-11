@@ -62,12 +62,13 @@ func (mr *MockClienterMockRecorder) List(repoPath, contexts interface{}) *gomock
 }
 
 // Diff mocks base method
-func (m *MockClienter) Diff(repoPath, stacks string, contexts map[string]string) (string, bool) {
+func (m *MockClienter) Diff(repoPath, stacks string, contexts map[string]string) (string, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Diff", repoPath, stacks, contexts)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Diff indicates an expected call of Diff

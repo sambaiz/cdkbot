@@ -29,7 +29,7 @@ func (r *Runner) Deploy(
 			return newResultState(constant.StateMergeReady, "No targets are matched"), nil
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
-			return newResultState(constant.StateError, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
+			return newResultState(constant.StateNotMergeReady, fmt.Sprintf("user %s is not allowed to deploy", userName)), nil
 		}
 		openPRs, err := r.platform.GetOpenPullRequests(ctx)
 		if err != nil {
@@ -37,8 +37,8 @@ func (r *Runner) Deploy(
 		}
 		if number, exists := existsOtherDeployedSameBasePRs(openPRs, pr); exists {
 			return newResultState(
-				constant.StateNeedDeploy,
-				fmt.Sprintf("deplyoed PR #%d is still opened. First /deploy and merge it, or /rollback.", number),
+				constant.StateNotMergeReady,
+				fmt.Sprintf("deployed PR #%d is still opened. First /deploy and merge it, or /rollback.", number),
 			), nil
 		}
 		if len(stacks) == 0 {
@@ -47,23 +47,30 @@ func (r *Runner) Deploy(
 				return nil, err
 			}
 		}
-		result, err := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
-		if err != nil {
-			return nil, err
+		var (
+			errMessage string
+			hasDiff    bool
+		)
+		result, deployErr := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
+		if deployErr != nil {
+			errMessage = deployErr.Error()
+		} else {
+			_, hasDiff, err = r.cdk.Diff(cdkPath, "", target.Contexts)
+			if err != nil {
+				errMessage = err.Error()
+			}
 		}
 		if err := r.platform.AddLabel(ctx, constant.LabelDeployed); err != nil {
 			return nil, err
 		}
-		_, hasDiff := r.cdk.Diff(cdkPath, "", target.Contexts)
-		message := "Success :tada:"
-		if hasDiff {
-			message = "To be continued."
-		}
 		if err := r.platform.CreateComment(
 			ctx,
-			fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, message),
+			fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, errMessage),
 		); err != nil {
 			return nil, err
+		}
+		if errMessage != "" {
+			return newResultState(constant.StateNotMergeReady, "Fix codes"), nil
 		}
 		if !hasDiff {
 			if err := r.platform.MergePullRequest(ctx, "automatically merged by cdkbot"); err != nil {
@@ -85,7 +92,7 @@ func (r *Runner) Deploy(
 			}
 			return newResultState(constant.StateMergeReady, "No diffs. Let's merge!"), nil
 		}
-		return newResultState(constant.StateNeedDeploy, "Fix if needed and complete deploy."), nil
+		return newResultState(constant.StateNotMergeReady, "Go ahead with deploy."), nil
 	})
 }
 

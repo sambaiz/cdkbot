@@ -157,12 +157,12 @@ func TestValidateStackName(t *testing.T) {
 			isError: false,
 		},
 		{
-			title:   "invalid character",
+			title:   "invalid_character",
 			in:      "Sta`ck1",
 			isError: true,
 		},
 		{
-			title:   "too long",
+			title:   "too_long",
 			in:      strings.Repeat("A", 129),
 			isError: true,
 		},

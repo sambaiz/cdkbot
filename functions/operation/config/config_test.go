@@ -35,12 +35,12 @@ func TestReaderRead(t *testing.T) {
 			},
 		},
 		{
-			title:   "file is not found",
+			title:   "file_is_not_found",
 			in:      "./test_config/notfound.yml",
 			isError: true,
 		},
 		{
-			title:   "invalid yaml",
+			title:   "invalid_yaml",
 			in:      "./test_config/invalid_yaml.yml",
 			isError: true,
 		},

@@ -7,10 +7,10 @@ import (
 )
 
 var stateMap = map[constant.State]*string{
-	constant.StateMergeReady: &[]string{"success"}[0],
-	constant.StateNeedDeploy: &[]string{"failure"}[0],
-	constant.StateRunning:    &[]string{"pending"}[0],
-	constant.StateError:      &[]string{"error"}[0],
+	constant.StateMergeReady:    &[]string{"success"}[0],
+	constant.StateNotMergeReady: &[]string{"failure"}[0],
+	constant.StateRunning:       &[]string{"pending"}[0],
+	constant.StateError:         &[]string{"error"}[0],
 }
 
 var statusContext = "cdkbot"
