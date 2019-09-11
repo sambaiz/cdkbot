@@ -75,7 +75,7 @@ func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) 
 	var err error
 	// If the error code is 0, there is no diff, if it is 1, there is diff, otherwise it is an error
 	if cmd.ProcessState.ExitCode() != 0 && cmd.ProcessState.ExitCode() != 1 {
-		err = errors.New("cdk diff failed.")
+		err = errors.New("cdk diff failed")
 	}
 	return strings.Trim(strings.Join(lines, "\n"), "\n"), cmd.ProcessState.ExitCode() != 0, err
 }
@@ -97,7 +97,7 @@ func (*Client) Deploy(repoPath string, stacks string, contexts map[string]string
 	}
 	var err error
 	if cmd.ProcessState.ExitCode() != 0 {
-		err = errors.New("cdk deploy failed.")
+		err = errors.New("cdk deploy failed")
 	}
 	return strings.Trim(strings.Join(lines, "\n"), "\n"), err
 }
