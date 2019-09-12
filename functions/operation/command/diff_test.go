@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/functions/operation/logger"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"testing"
 
@@ -147,6 +148,7 @@ func TestRunner_Diff(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 
@@ -161,6 +163,7 @@ func TestRunner_Diff(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 		platformClient.EXPECT().RemoveLabel(ctx, constant.LabelOutdatedDiff).Return(nil)
@@ -170,6 +173,7 @@ func TestRunner_Diff(t *testing.T) {
 			git:      gitClient,
 			config:   configClient,
 			cdk:      cdkClient,
+			logger:   logger.MockLogger{},
 		}
 	}
 

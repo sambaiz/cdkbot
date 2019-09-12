@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/logger"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
@@ -77,6 +78,7 @@ func TestRunner_setup(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 			cdkPath, retCfg, retTarget, outpr, err := runner.setup(ctx, cloneHead)
 			assert.Equal(t, fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), cdkPath)

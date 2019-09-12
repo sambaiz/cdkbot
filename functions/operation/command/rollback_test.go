@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/logger"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
@@ -235,6 +236,7 @@ func TestRunner_Rollback(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 		if !cfg.IsUserAllowedDeploy(userName) {
@@ -243,6 +245,7 @@ func TestRunner_Rollback(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 
@@ -263,6 +266,7 @@ func TestRunner_Rollback(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 		if !resultHasDiff {
@@ -274,6 +278,7 @@ func TestRunner_Rollback(t *testing.T) {
 			git:      gitClient,
 			config:   configClient,
 			cdk:      cdkClient,
+			logger:   logger.MockLogger{},
 		}
 	}
 

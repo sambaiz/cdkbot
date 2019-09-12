@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/sambaiz/cdkbot/functions/operation/logger"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
 	"strings"
 	"testing"
@@ -207,6 +208,7 @@ func TestRunner_Deploy(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 
@@ -236,6 +238,7 @@ func TestRunner_Deploy(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 
@@ -259,6 +262,7 @@ func TestRunner_Deploy(t *testing.T) {
 				git:      gitClient,
 				config:   configClient,
 				cdk:      cdkClient,
+				logger:   logger.MockLogger{},
 			}
 		}
 
@@ -273,6 +277,7 @@ func TestRunner_Deploy(t *testing.T) {
 			git:      gitClient,
 			config:   configClient,
 			cdk:      cdkClient,
+			logger:   logger.MockLogger{},
 		}
 	}
 
