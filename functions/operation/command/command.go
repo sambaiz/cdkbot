@@ -7,7 +7,9 @@ import (
 	"github.com/sambaiz/cdkbot/functions/operation/config"
 	"github.com/sambaiz/cdkbot/functions/operation/constant"
 	"github.com/sambaiz/cdkbot/functions/operation/git"
+	"github.com/sambaiz/cdkbot/functions/operation/logger"
 	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	"go.uber.org/zap"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -35,15 +37,17 @@ type Runner struct {
 	git      git.Clienter
 	config   config.Readerer
 	cdk      cdk.Clienter
+	logger   logger.Loggerer
 }
 
-// NewRunner Runenrn
-func NewRunner(client platform.Clienter, cloneURL string) *Runner {
+// NewRunner creates Runner
+func NewRunner(client platform.Clienter, cloneURL string, logger logger.Loggerer) *Runner {
 	return &Runner{
 		platform: client,
 		git:      git.NewClient(cloneURL),
 		config:   new(config.Reader),
 		cdk:      new(cdk.Client),
+		logger:   logger,
 	}
 }
 
@@ -70,20 +74,26 @@ func (r *Runner) updateStatus(
 		return err
 	}
 	state, err := f()
-	r.platform.RemoveLabel(ctx, constant.LabelRunning)
+	if err := r.platform.RemoveLabel(ctx, constant.LabelRunning); err != nil {
+		r.logger.Error("remove label error", zap.Error(err))
+	}
 	if err != nil {
-		r.platform.SetStatus(
+		if err := r.platform.SetStatus(
 			ctx,
 			constant.StateError,
 			err.Error(),
-		)
+		); err != nil {
+			r.logger.Error("set status error", zap.Error(err))
+		}
 		return err
 	}
-	r.platform.SetStatus(
+	if err := r.platform.SetStatus(
 		ctx,
 		state.state,
 		state.description,
-	)
+	); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -132,8 +142,8 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 		command := strings.Split(preCommand, " ")
 		cmd := exec.Command(command[0], command[1:]...)
 		cmd.Dir = cdkPath
-		if out, _ := cmd.CombinedOutput(); cmd.ProcessState.ExitCode() != 0 {
-			return "", nil, nil, nil, fmt.Errorf("preCommand %s failed: %s", preCommand, string(out))
+		if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+			return "", nil, nil, nil, fmt.Errorf("preCommand %s failed: %s %v", preCommand, string(out), err)
 		}
 	}
 	return cdkPath, cfg, &target, pr, nil

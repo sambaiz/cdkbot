@@ -1,7 +1,6 @@
 package cdk
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,9 +30,9 @@ func (*Client) Setup(repoPath string) error {
 	}
 	cmd := exec.Command("npm", "install")
 	cmd.Dir = repoPath
-	out, _ := cmd.CombinedOutput()
-	if cmd.ProcessState.ExitCode() != 0 {
-		return fmt.Errorf("npm install failed: %s", string(out))
+	out, err := cmd.CombinedOutput()
+	if err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("npm install failed: %s %v", string(out), err)
 	}
 	return nil
 }
@@ -47,17 +46,14 @@ func (*Client) List(repoPath string, contexts map[string]string) ([]string, erro
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-	if cmd.ProcessState.ExitCode() != 0 {
-		return nil, fmt.Errorf("cdk list failed: %s", string(out))
+	if err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return nil, fmt.Errorf("cdk list failed: %s %v", string(out), err)
 	}
 	lists := strings.Split(strings.Trim(string(out), "\n"), "\n")[3:]
 	return lists, nil
 }
 
-// Diff stack and returns (diff, hasDiff)
+// Diff stack and returns (diff, hasDiff, error)
 func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) (string, bool, error) {
 	args := []string{"run", "cdk", "--", "diff", stacks}
 	for k, v := range contexts {
@@ -65,19 +61,18 @@ func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) 
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
-	out, _ := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
+	// If the error code is 0, there is no diff, if it is 1, there is diff, otherwise it is an error
+	if cmd.ProcessState.ExitCode() != 0 && cmd.ProcessState.ExitCode() != 1 {
+		return "failed!", true, fmt.Errorf("cdk diff failed: %s %v", string(out), err)
+	}
 	lines := []string{}
 	for _, line := range strings.Split(strings.Trim(string(out), "\n"), "\n")[3:] {
 		if !strings.HasPrefix(line, "npm ERR!") {
 			lines = append(lines, line)
 		}
 	}
-	var err error
-	// If the error code is 0, there is no diff, if it is 1, there is diff, otherwise it is an error
-	if cmd.ProcessState.ExitCode() != 0 && cmd.ProcessState.ExitCode() != 1 {
-		err = errors.New("cdk diff failed")
-	}
-	return strings.Trim(strings.Join(lines, "\n"), "\n"), cmd.ProcessState.ExitCode() != 0, err
+	return strings.Trim(strings.Join(lines, "\n"), "\n"), cmd.ProcessState.ExitCode() != 0, nil
 }
 
 // Deploy stack
@@ -88,16 +83,15 @@ func (*Client) Deploy(repoPath string, stacks string, contexts map[string]string
 	}
 	cmd := exec.Command("npm", args...)
 	cmd.Dir = repoPath
-	out, _ := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
+	if err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return "failed!", fmt.Errorf("cdk deploy failed: %s %v", string(out), err)
+	}
 	lines := []string{}
 	for _, line := range strings.Split(strings.Trim(string(out), "\n"), "\n")[3:] {
 		if !strings.HasPrefix(line, "npm ERR!") {
 			lines = append(lines, line)
 		}
-	}
-	var err error
-	if cmd.ProcessState.ExitCode() != 0 {
-		err = errors.New("cdk deploy failed")
 	}
 	return strings.Trim(strings.Join(lines, "\n"), "\n"), err
 }
