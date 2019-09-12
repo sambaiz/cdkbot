@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['cloudformation', 'cdk']
     HomePageUrl: https://github.com/sambaiz/cdkbot
-    SemanticVersion: 0.3.3
+    SemanticVersion: 0.3.4
     SourceCodeUrl: https://github.com/sambaiz/cdkbot
 
 Parameters:
@@ -51,7 +51,7 @@ Resources:
       ReservedConcurrentExecutions: 1
       Layers:
         - !Ref CDKBotLayer
-        - "arn:aws:lambda:${AWS::Region}:553035198032:layer:git:6"
+        - "arn:aws:lambda:us-east-1:553035198032:layer:git:6"
       Environment:
         Variables:
           PLATFORM: !Ref Platform
