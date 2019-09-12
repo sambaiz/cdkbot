@@ -132,8 +132,8 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 		command := strings.Split(preCommand, " ")
 		cmd := exec.Command(command[0], command[1:]...)
 		cmd.Path = cdkPath
-		if out, _ := cmd.CombinedOutput(); cmd.ProcessState.ExitCode() != 0 {
-			return "", nil, nil, nil, fmt.Errorf("preCommand %s failed: %s", preCommand, string(out))
+		if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+			return "", nil, nil, nil, fmt.Errorf("preCommand %s failed: %s %v", preCommand, string(out), err)
 		}
 	}
 	return cdkPath, cfg, &target, pr, nil
