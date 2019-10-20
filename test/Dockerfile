@@ -5,7 +5,7 @@ ENV GO111MODULE=on
 ENV GOPATH=/go
 
 RUN mkdir -p /go/pkg/mod && \
-    apk add --no-cache nodejs npm make gcc libc-dev git
+    apk add --no-cache nodejs npm make gcc libc-dev git docker
 
 WORKDIR /root/cdkbot
 ENTRYPOINT []
