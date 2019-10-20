@@ -3,18 +3,18 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-	"github.com/sambaiz/cdkbot/functions/operation/logger"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	cdkMock "github.com/sambaiz/cdkbot/tasks/operation/cdk/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/config"
+	configMock "github.com/sambaiz/cdkbot/tasks/operation/config/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
+	gitMock "github.com/sambaiz/cdkbot/tasks/operation/git/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/logger"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform"
+	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
 	"testing"
 
 	"errors"
 	"github.com/golang/mock/gomock"
-	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
-	"github.com/sambaiz/cdkbot/functions/operation/config"
-	configMock "github.com/sambaiz/cdkbot/functions/operation/config/mock"
-	gitMock "github.com/sambaiz/cdkbot/functions/operation/git/mock"
-	platformMock "github.com/sambaiz/cdkbot/functions/operation/platform/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +29,7 @@ func TestRunner_Diff(t *testing.T) {
 		baseBranch    string
 		resultHasDiff bool
 		diffError     error
-		expected expected
+		expected      expected
 	}{
 		{
 			title: "no_targets_are_matched",
@@ -43,7 +43,7 @@ func TestRunner_Diff(t *testing.T) {
 			resultHasDiff: false,
 			expected: expected{
 				outState: newResultState(constant.StateMergeReady, "No targets are matched"),
-				isError: false,
+				isError:  false,
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestRunner_Diff(t *testing.T) {
 			resultHasDiff: true,
 			expected: expected{
 				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
-				isError: false,
+				isError:  false,
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestRunner_Diff(t *testing.T) {
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
 				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
-				isError: false,
+				isError:  false,
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestRunner_Diff(t *testing.T) {
 			resultHasDiff: false,
 			expected: expected{
 				outState: newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
-				isError: false,
+				isError:  false,
 			},
 		},
 	}

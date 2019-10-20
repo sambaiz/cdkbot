@@ -35,8 +35,10 @@ func (l *Logger) Error(msg string, fields ...zap.Field) {
 }
 
 // MockLogger is logger for test
-type MockLogger struct {}
+type MockLogger struct{}
+
 // Info log
 func (l MockLogger) Info(msg string, fields ...zap.Field) {}
+
 // Error log
 func (l MockLogger) Error(msg string, fields ...zap.Field) {}

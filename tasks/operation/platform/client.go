@@ -2,8 +2,7 @@ package platform
 
 import (
 	"context"
-
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
 )
 
 // Comment is a comment of PR

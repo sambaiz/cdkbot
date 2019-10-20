@@ -5,9 +5,9 @@
 package mock
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	config "github.com/sambaiz/cdkbot/functions/operation/config"
-	reflect "reflect"
+	"github.com/golang/mock/gomock"
+	config2 "github.com/sambaiz/cdkbot/tasks/operation/config"
+	"reflect"
 )
 
 // MockReaderer is a mock of Readerer interface
@@ -34,10 +34,10 @@ func (m *MockReaderer) EXPECT() *MockReadererMockRecorder {
 }
 
 // Read mocks base method
-func (m *MockReaderer) Read(path string) (*config.Config, error) {
+func (m *MockReaderer) Read(path string) (*config2.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Read", path)
-	ret0, _ := ret[0].(*config.Config)
+	ret0, _ := ret[0].(*config2.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

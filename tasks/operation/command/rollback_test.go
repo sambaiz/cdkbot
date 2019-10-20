@@ -3,20 +3,19 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/logger"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	cdkMock "github.com/sambaiz/cdkbot/tasks/operation/cdk/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/config"
+	configMock "github.com/sambaiz/cdkbot/tasks/operation/config/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
+	gitMock "github.com/sambaiz/cdkbot/tasks/operation/git/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/logger"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform"
+	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
 	"strings"
 	"testing"
 
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-
 	"errors"
 	"github.com/golang/mock/gomock"
-	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
-	"github.com/sambaiz/cdkbot/functions/operation/config"
-	configMock "github.com/sambaiz/cdkbot/functions/operation/config/mock"
-	gitMock "github.com/sambaiz/cdkbot/functions/operation/git/mock"
-	platformMock "github.com/sambaiz/cdkbot/functions/operation/platform/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,9 +51,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: false,
 			expected: expected{
-				comment: "",
-				outState:      newResultState(constant.StateMergeReady, "No targets are matched"),
-				isError: false,
+				comment:  "",
+				outState: newResultState(constant.StateMergeReady, "No targets are matched"),
+				isError:  false,
 			},
 		},
 		{
@@ -75,9 +74,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: false,
 			expected: expected{
-				comment: "### cdk deploy (rollback)\n```\nresult\n```\nRollback is completed.",
-				outState:     newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
-				isError: false,
+				comment:  "### cdk deploy (rollback)\n```\nresult\n```\nRollback is completed.",
+				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
+				isError:  false,
 			},
 		},
 		{
@@ -98,9 +97,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: true,
 			expected: expected{
-				comment: "### cdk deploy (rollback)\n```\nresult\n```\nTo be continued.",
-				outState:     newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
-				isError: false,
+				comment:  "### cdk deploy (rollback)\n```\nresult\n```\nTo be continued.",
+				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
+				isError:  false,
 			},
 		},
 		{
@@ -121,9 +120,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			deployError: errors.New("cdk deploy error"),
 			expected: expected{
-				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk deploy error",
-				outState:     newResultState(constant.StateNotMergeReady, "Fix codes"),
-				isError: false,
+				comment:  "### cdk deploy (rollback)\n```\nresult\n```\ncdk deploy error",
+				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
+				isError:  false,
 			},
 		},
 		{
@@ -144,9 +143,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:     map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
-				comment: "### cdk deploy (rollback)\n```\nresult\n```\ncdk diff error",
-				outState:     newResultState(constant.StateNotMergeReady, "Fix codes"),
-				isError: false,
+				comment:  "### cdk deploy (rollback)\n```\nresult\n```\ncdk diff error",
+				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
+				isError:  false,
 			},
 		},
 		{
@@ -164,9 +163,9 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{},
 			resultHasDiff: true,
 			expected: expected{
-				comment: "",
-				outState:     newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
-				isError: false,
+				comment:  "",
+				outState: newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
+				isError:  false,
 			},
 		},
 		{
@@ -183,9 +182,9 @@ func TestRunner_Rollback(t *testing.T) {
 			baseBranch:    "develop",
 			resultHasDiff: true,
 			expected: expected{
-				comment: "",
-				outState:     newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
-				isError: false,
+				comment:  "",
+				outState: newResultState(constant.StateNotMergeReady, "user sambaiz is not allowed to deploy"),
+				isError:  false,
 			},
 		},
 	}

@@ -3,7 +3,7 @@ package client
 import (
 	"context"
 	"github.com/google/go-github/v26/github"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
 )
 
 // AddLabel adds label to PR

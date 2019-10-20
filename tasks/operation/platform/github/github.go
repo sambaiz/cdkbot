@@ -3,14 +3,12 @@ package github
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/command"
-	"github.com/sambaiz/cdkbot/functions/operation/logger"
-	"github.com/sambaiz/cdkbot/functions/operation/platform/github/client"
-	"net/http"
+	"github.com/sambaiz/cdkbot/tasks/operation/command"
+	"github.com/sambaiz/cdkbot/tasks/operation/logger"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform/github/client"
+	"golang.org/x/xerrors"
 	"os"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/aws/aws-lambda-go/events"
 	goGitHub "github.com/google/go-github/v26/github"
@@ -21,23 +19,17 @@ func Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 	logger logger.Loggerer,
-) (*events.APIGatewayProxyResponse, error) {
+) error {
 	if err := goGitHub.ValidateSignature(
 		req.Headers["X-Hub-Signature"],
 		[]byte(req.Body),
 		[]byte(os.Getenv("GITHUB_WEBHOOK_SECRET")),
 	); err != nil {
-		logger.Info("Signature is invalid", zap.Error(err))
-		return &events.APIGatewayProxyResponse{
-			StatusCode: http.StatusBadRequest,
-		}, nil
+		return xerrors.Errorf("Signature is invalid: %w", err)
 	}
 	hook, err := goGitHub.ParseWebHook(req.Headers["X-GitHub-Event"], []byte(req.Body))
 	if err != nil {
-		logger.Error("parse hook error", zap.Error(err))
-		return &events.APIGatewayProxyResponse{
-			StatusCode: http.StatusBadRequest,
-		}, nil
+		return xerrors.Errorf("parse hook error: %w", err)
 	}
 
 	switch ev := hook.(type) {
@@ -53,7 +45,7 @@ func Handler(
 				os.Getenv("GITHUB_USER_NAME"),
 				os.Getenv("GITHUB_ACCESS_TOKEN"),
 				strings.Replace(ev.GetRepo().GetCloneURL(), "https://", "", 1)),
-				logger,
+			logger,
 		)
 		switch ev.GetAction() {
 		case "opened":
@@ -67,10 +59,8 @@ func Handler(
 			strings.TrimLeft(ev.GetRef(), "refs/heads/"),
 		)
 		if err != nil {
-			// Push to branch where PR is not created does nothing
-			return &events.APIGatewayProxyResponse{
-				StatusCode: http.StatusOK,
-			}, nil
+			// When push to branch where PR is not created, nothing is to do
+			return nil
 		}
 		err = command.NewRunner(
 			client,
@@ -78,7 +68,7 @@ func Handler(
 				os.Getenv("GITHUB_USER_NAME"),
 				os.Getenv("GITHUB_ACCESS_TOKEN"),
 				strings.Replace(ev.GetRepo().GetCloneURL(), "https://", "", 1)),
-				logger,
+			logger,
 		).Diff(ctx)
 	case *goGitHub.IssueCommentEvent:
 		runner := command.NewRunner(
@@ -92,7 +82,7 @@ func Handler(
 				os.Getenv("GITHUB_USER_NAME"),
 				os.Getenv("GITHUB_ACCESS_TOKEN"),
 				strings.Replace(ev.GetRepo().GetCloneURL(), "https://", "", 1)),
-				logger,
+			logger,
 		)
 		switch ev.GetAction() {
 		case "created":
@@ -100,9 +90,7 @@ func Handler(
 		}
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &events.APIGatewayProxyResponse{
-		StatusCode: http.StatusOK,
-	}, nil
+	return nil
 }

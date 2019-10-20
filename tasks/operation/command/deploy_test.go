@@ -3,20 +3,19 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/logger"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	cdkMock "github.com/sambaiz/cdkbot/tasks/operation/cdk/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/config"
+	configMock "github.com/sambaiz/cdkbot/tasks/operation/config/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
+	gitMock "github.com/sambaiz/cdkbot/tasks/operation/git/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/logger"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform"
+	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
 	"strings"
 	"testing"
 
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-
 	"errors"
 	"github.com/golang/mock/gomock"
-	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
-	"github.com/sambaiz/cdkbot/functions/operation/config"
-	configMock "github.com/sambaiz/cdkbot/functions/operation/config/mock"
-	gitMock "github.com/sambaiz/cdkbot/functions/operation/git/mock"
-	platformMock "github.com/sambaiz/cdkbot/functions/operation/platform/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -227,8 +226,8 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			{
 				Number:     4,
-				BaseBranch:  "branch_deploying",
-				Labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
+				BaseBranch: "branch_deploying",
+				Labels:     map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			},
 		}
 		platformClient.EXPECT().GetOpenPullRequests(ctx).Return(openPRs, nil)

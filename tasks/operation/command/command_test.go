@@ -3,19 +3,18 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/logger"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	cdkMock "github.com/sambaiz/cdkbot/tasks/operation/cdk/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/config"
+	configMock "github.com/sambaiz/cdkbot/tasks/operation/config/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
+	gitMock "github.com/sambaiz/cdkbot/tasks/operation/git/mock"
+	"github.com/sambaiz/cdkbot/tasks/operation/logger"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform"
+	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
 	"strings"
 	"testing"
 
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-
 	"github.com/golang/mock/gomock"
-	cdkMock "github.com/sambaiz/cdkbot/functions/operation/cdk/mock"
-	"github.com/sambaiz/cdkbot/functions/operation/config"
-	configMock "github.com/sambaiz/cdkbot/functions/operation/config/mock"
-	gitMock "github.com/sambaiz/cdkbot/functions/operation/git/mock"
-	platformMock "github.com/sambaiz/cdkbot/functions/operation/platform/mock"
 	"github.com/stretchr/testify/assert"
 )
 

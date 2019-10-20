@@ -1,4 +1,4 @@
-functions/operation/operation
+tasks/operation/operation
 functions/webhook/webhook
 private-key.pem
 packaged.yaml

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/v26/github"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
-	"github.com/sambaiz/cdkbot/functions/operation/platform"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
+	"github.com/sambaiz/cdkbot/tasks/operation/platform"
 	"strings"
 )
 

@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/sambaiz/cdkbot/functions/operation/constant"
+	"github.com/sambaiz/cdkbot/tasks/operation/constant"
 	"strings"
 )
 
