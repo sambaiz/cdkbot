@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['cloudformation', 'cdk']
     HomePageUrl: https://github.com/sambaiz/cdkbot
-    SemanticVersion: 0.3.4
+    SemanticVersion: 0.4.0
     SourceCodeUrl: https://github.com/sambaiz/cdkbot
 
 Parameters:
@@ -41,40 +41,17 @@ Globals:
     MemorySize: 1024
 
 Resources:
-  OperationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/operation/
-      Handler: operation
-      Runtime: go1.x
-      Role: !GetAtt CDKRole.Arn
-      ReservedConcurrentExecutions: 1
-      Layers:
-        - !Ref CDKBotLayer
-        - "arn:aws:lambda:us-east-1:553035198032:layer:git:6"
-      Environment:
-        Variables:
-          PLATFORM: !Ref Platform
-          GITHUB_USER_NAME: !Ref GitHubUserName
-          GITHUB_ACCESS_TOKEN: !Ref GitHubAccessToken
-          GITHUB_WEBHOOK_SECRET: !Ref GitHubWebhookSecret
-  OperationFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${OperationFunction}
-      RetentionInDays: 14
   WebhookFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/webhook/
       Handler: webhook
       Runtime: go1.x
-      Role: !GetAtt InvokeOperationFunctionRole.Arn
       Timeout: 10
       MemorySize: 128
       Environment:
         Variables:
-          INVOKE_FUNTION_ARN: !GetAtt OperationFunction.Arn
+          OPERATION_TASK_ARN: !Ref OperationTaskDefinition
       Events:
         CatchAll:
           Type: Api
@@ -86,47 +63,80 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${WebhookFunction}
       RetentionInDays: 14
-  CDKRole:
-    Type: AWS::IAM::Role
+  TaskExecutionRole:
+    Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Effect: 'Allow'
             Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
-  InvokeOperationFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+              Service: 'ecs-tasks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
       Policies:
-        - PolicyName: "cdkbot_invoke_operation_function"
+        - PolicyName: cdkbot-task-execution-role-policy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
-                Action: "lambda:InvokeFunction"
-                Resource: !GetAtt OperationFunction.Arn
-  CDKBotLayer:
-    Type: AWS::Serverless::LayerVersion
+              - Effect: 'Allow'
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+  OperationTaskRole:
+    Type: AWS::IAM::Role
     Properties:
-      LayerName: CDKBotLayer
-      Description: cdkbot layer
-      ContentUri: './layer'
-      CompatibleRuntimes:
-        - go1.x
-      RetentionPolicy: Delete
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # Caution: cdkbot use a very strong role because cdk can modify whatever resources.
+        - arn:aws:iam::aws:policy/AdministratorAccess
+  OperationTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - 'FARGATE'
+      NetworkMode: 'awsvpc'
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      TaskRoleArn: !Ref OperationTaskRole
+      Cpu: '512'
+      Memory: '1024'
+      ContainerDefinitions:
+        - Name: 'cdkbot-operation'
+          Image: 'sambaiz/cdkbot-operation:0.4.0'
+          Essential: 'true'
+          LogConfiguration:
+            LogDriver: 'awslogs'
+            Options:
+              awslogs-group: !Ref OperationTaskLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: 'cdkbot-operation'
+          Environment:
+            - Name: 'TZ'
+              Value: 'Asia/Tokyo'
+            - Name: 'PLATFORM'
+              Value: !Ref Platform
+            - Name: 'GITHUB_USER_NAME'
+              Value: !Ref GitHubUserName
+            - Name: 'GITHUB_ACCESS_TOKEN'
+              Value: !Ref GitHubAccessToken
+            - Name: 'GITHUB_WEBHOOK_SECRET'
+              Value: !Ref GitHubWebhookSecret
+  OperationTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: cdkbot-operation
+      RetentionInDays: 1
 Outputs:
   WebhookEndpoint:
     Description: "Webhook endpoint"

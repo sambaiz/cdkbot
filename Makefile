@@ -26,7 +26,7 @@ deploy: package
 	GitHubUserName=${GitHubUserName} \
 	GitHubAccessToken=${GitHubAccessToken} \
 	GitHubWebhookSecret=${GitHubWebhookSecret} \
-	--template-file packaged.yaml --stack-name cdkbot --capabilities CAPABILITY_IAM
+	--template-file packaged.yaml --stack-name cdkbot --capabilities CAPABILITY_IAM --region ${Region}
 
 publish: package
 	sam publish -t packaged.yaml --region ${Region}

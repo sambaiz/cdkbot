@@ -66,7 +66,7 @@ Token can be generated at `Settings/Developer settings`.
 repo and write:discussion scopes are required.
 
 - GitHubWebhookSecret: Generate a random string.
-- Platform: Only github.
+- Platform: Only `github`.
 
 
 ### cdkbot.yml
