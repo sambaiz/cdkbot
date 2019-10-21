@@ -58,7 +58,7 @@ Install from Serverless Application Repository
 
 - [us-east-1](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
 
-or `make deploy S3Bucket=*** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
+or `make deploy S3Bucket=*** SubnetID=subnet-***** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
 
 - GitHubUserName & GitHubAccessToken
 
@@ -67,6 +67,7 @@ repo and write:discussion scopes are required.
 
 - GitHubWebhookSecret: Generate a random string.
 - Platform: Only `github`.
+- SubnetID: an exist Subnet ID
 
 
 ### cdkbot.yml

@@ -34,6 +34,9 @@ Parameters:
     Description: Repository's webhook secret
     Type: String
     NoEcho: true
+  SubnetID:
+    Description: Subnet ID to run ECS task
+    Type: String
 
 Globals:
   Function:
@@ -47,11 +50,14 @@ Resources:
       CodeUri: functions/webhook/
       Handler: webhook
       Runtime: go1.x
+      Role: !GetAtt WebhookFunctionRole.Arn
       Timeout: 10
       MemorySize: 128
       Environment:
         Variables:
-          OPERATION_TASK_ARN: !Ref OperationTaskDefinition
+          TASK_ECS_CLUSTER_ARN: !Ref ECSCluster
+          OPERATION_TASK_DEFINITION_ARN: !Ref OperationTaskDefinition
+          SUBNET_ID: !Ref SubnetID
       Events:
         CatchAll:
           Type: Api
@@ -63,6 +69,35 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${WebhookFunction}
       RetentionInDays: 14
+  WebhookFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "cdkbot_invoke_operation_function"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "ecs:RunTask"
+                Resource: !Ref OperationTaskDefinition
+              - Effect: "Allow"
+                Action: "iam:PassRole"
+                Resource:
+                  - !GetAtt TaskExecutionRole.Arn
+                  - !GetAtt OperationTaskRole.Arn
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: 'cdkbot'
   TaskExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -92,12 +127,13 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Effect: 'Allow'
             Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
+              Service: 'ecs-tasks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
       ManagedPolicyArns:
         # Caution: cdkbot use a very strong role because cdk can modify whatever resources.
         - arn:aws:iam::aws:policy/AdministratorAccess

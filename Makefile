@@ -1,6 +1,7 @@
 .PHONY: clean build package deploy publish install-tools lint test _test doc
 
 S3Bucket=cdkbot
+Platform=githubs
 Region=us-east-1
 
 clean: 
@@ -22,6 +23,7 @@ package: build
 
 deploy: package
 	aws cloudformation deploy --parameter-overrides \
+	SubnetID=${SubnetID} \
 	Platform=${Platform} \
 	GitHubUserName=${GitHubUserName} \
 	GitHubAccessToken=${GitHubAccessToken} \
