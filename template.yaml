@@ -55,9 +55,8 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          TASK_ECS_CLUSTER_ARN: !Ref ECSCluster
-          OPERATION_TASK_DEFINITION_ARN: !Ref OperationTaskDefinition
-          SUBNET_ID: !Ref SubnetID
+          TASK_ECS_CLUSTER_ARN: !GetAtt ECSCluster.Arn
+          OPERATION_SERVICE_ARN: !Ref OperationService
       Events:
         CatchAll:
           Type: Api
@@ -82,18 +81,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: "cdkbot_invoke_operation_function"
+        - PolicyName: cdkbot-webhook-function-role-policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
-                Action: "ecs:RunTask"
-                Resource: !Ref OperationTaskDefinition
-              - Effect: "Allow"
-                Action: "iam:PassRole"
-                Resource:
-                  - !GetAtt TaskExecutionRole.Arn
-                  - !GetAtt OperationTaskRole.Arn
+                Action: "ecs:UpdateService"
+                Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSCluster}/${OperationService.Name}'
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -173,6 +167,19 @@ Resources:
     Properties:
       LogGroupName: cdkbot-operation
       RetentionInDays: 1
+  OperationService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !GetAtt ECSCluster.Arn
+      LaunchType: FARGATE
+      DesiredCount: 0
+      TaskDefinition: !Ref OperationTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: 'ENABLED'
+          Subnets:
+            - !Ref SubnetID
+      ServiceName: 'operation'
 Outputs:
   WebhookEndpoint:
     Description: "Webhook endpoint"

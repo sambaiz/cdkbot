@@ -1,7 +1,7 @@
 .PHONY: clean build package deploy publish install-tools lint test _test doc
 
 S3Bucket=cdkbot
-Platform=githubs
+Platform=github
 Region=us-east-1
 
 clean: 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -17,7 +16,7 @@ type response events.APIGatewayProxyResponse
 
 func handler(event events.APIGatewayProxyRequest) (response, error) {
 	// Container Overrides length must be at most 8192 so it must be reduced.
-	payload, err := json.Marshal(events.APIGatewayProxyRequest{
+	_, err := json.Marshal(events.APIGatewayProxyRequest{
 		Body: event.Body,
 		Headers: event.Headers,
 	})
@@ -28,31 +27,18 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 	}
 
 	svc := ecs.New(session.New())
-	input := &ecs.RunTaskInput{
-		Cluster:        aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
-		LaunchType:     aws.String("FARGATE"),
-		NetworkConfiguration: &ecs.NetworkConfiguration{
-			AwsvpcConfiguration: &ecs.AwsVpcConfiguration{
-				Subnets:        aws.StringSlice([]string{os.Getenv("SUBNET_ID")}),
-			},
-		},
-		TaskDefinition: aws.String(os.Getenv("OPERATION_TASK_DEFINITION_ARN")),
-		Count:          aws.Int64(1),
-		Overrides: &ecs.TaskOverride{
-			ContainerOverrides: []*ecs.ContainerOverride{
-				&ecs.ContainerOverride{
-					Name:    aws.String("cdkbot-operation"),
-					// Command: []*string{aws.String(string(payload))},
-				},
-			},
-		},
+	
+	input := &ecs.UpdateServiceInput{
+		Cluster:                       aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
+		DesiredCount:                  aws.Int64(1),
+		Service:                       aws.String(os.Getenv("OPERATION_SERVICE_ARN")),
 	}
-	if _, err := svc.RunTask(input); err != nil {
-		fmt.Println(err.Error())
+	if _, err := svc.UpdateService(input); err != nil {
 		return response{
 			StatusCode: http.StatusInternalServerError,
 		}, err
 	}
+
 	return response{
 		StatusCode: http.StatusOK,
 	}, nil
