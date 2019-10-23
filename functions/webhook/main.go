@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -10,30 +11,39 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 type response events.APIGatewayProxyResponse
 
 func handler(event events.APIGatewayProxyRequest) (response, error) {
 	// Container Overrides length must be at most 8192 so it must be reduced.
-	_, err := json.Marshal(events.APIGatewayProxyRequest{
-		Body: event.Body,
-		Headers: event.Headers,
-	})
+	payload, err := json.Marshal(event)
 	if err != nil {
 		return response{
 			StatusCode: http.StatusInternalServerError,
 		}, err
 	}
 
-	svc := ecs.New(session.New())
-	
-	input := &ecs.UpdateServiceInput{
+	sqsSvc := sqs.New(session.New())
+	if _, err := sqsSvc.SendMessage(&sqs.SendMessageInput{
+		MessageBody:            aws.String(string(payload)),
+		QueueUrl:               aws.String(os.Getenv("OPERATION_QUEUE_URL")),
+		MessageGroupId:         aws.String("group"),
+	}); err != nil {
+		fmt.Println(err.Error())
+		return response{
+			StatusCode: http.StatusInternalServerError,
+		}, err
+	}
+
+	ecsSvc := ecs.New(session.New())
+	if _, err := ecsSvc.UpdateService(&ecs.UpdateServiceInput{
 		Cluster:                       aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
 		DesiredCount:                  aws.Int64(1),
 		Service:                       aws.String(os.Getenv("OPERATION_SERVICE_ARN")),
-	}
-	if _, err := svc.UpdateService(input); err != nil {
+	}); err != nil {
+		fmt.Println(err.Error())
 		return response{
 			StatusCode: http.StatusInternalServerError,
 		}, err

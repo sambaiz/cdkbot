@@ -57,6 +57,7 @@ Resources:
         Variables:
           TASK_ECS_CLUSTER_ARN: !GetAtt ECSCluster.Arn
           OPERATION_SERVICE_ARN: !Ref OperationService
+          OPERATION_QUEUE_URL: !Ref OperationQueue
       Events:
         CatchAll:
           Type: Api
@@ -88,6 +89,9 @@ Resources:
               - Effect: "Allow"
                 Action: "ecs:UpdateService"
                 Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSCluster}/${OperationService.Name}'
+              - Effect: "Allow"
+                Action: "sqs:SendMessage"
+                Resource: !GetAtt OperationQueue.Arn
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -180,6 +184,11 @@ Resources:
           Subnets:
             - !Ref SubnetID
       ServiceName: 'operation'
+  OperationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
+      ContentBasedDeduplication: true
 Outputs:
   WebhookEndpoint:
     Description: "Webhook endpoint"
