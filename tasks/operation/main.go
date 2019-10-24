@@ -62,9 +62,9 @@ func main() {
 
 	ecsSvc := ecs.New(sess)
 	if _, err := ecsSvc.UpdateService(&ecs.UpdateServiceInput{
-		Cluster:                       aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
-		DesiredCount:                  aws.Int64(0),
-		Service:                       aws.String(os.Getenv("OPERATION_SERVICE_ARN")),
+		Cluster:      aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
+		DesiredCount: aws.Int64(0),
+		Service:      aws.String(os.Getenv("OPERATION_SERVICE_ARN")),
 	}); err != nil {
 		logger.Error("shutdown task error", zap.Error(err))
 	}

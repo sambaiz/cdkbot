@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/sambaiz/cdkbot/tasks/operation/constant"
-	"strings"
 )
 
 // Rollback runs cdk deploy at base branch
@@ -33,7 +32,7 @@ func (r *Runner) Rollback(
 				return nil, err
 			}
 		}
-		result, deployErr := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
+		result, deployErr := r.cdk.Deploy(cdkPath, stacks, target.Contexts)
 		message := "Rollback is completed."
 		var (
 			hasDiff bool
@@ -42,7 +41,7 @@ func (r *Runner) Rollback(
 		if deployErr != nil {
 			message = deployErr.Error()
 		} else {
-			_, hasDiff, diffErr = r.cdk.Diff(cdkPath, "", target.Contexts)
+			_, hasDiff, diffErr = r.cdk.Diff(cdkPath, nil, target.Contexts)
 			if diffErr != nil {
 				message = diffErr.Error()
 			} else if hasDiff {
@@ -51,7 +50,7 @@ func (r *Runner) Rollback(
 		}
 		if err := r.platform.CreateComment(
 			ctx,
-			fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n```\n%s", result, message),
+			fmt.Sprintf("### cdk deploy (rollback)\n```\n%s\n%s\n```", result, message),
 		); err != nil {
 			return nil, err
 		}

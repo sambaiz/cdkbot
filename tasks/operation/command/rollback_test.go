@@ -11,7 +11,6 @@ import (
 	"github.com/sambaiz/cdkbot/tasks/operation/logger"
 	"github.com/sambaiz/cdkbot/tasks/operation/platform"
 	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
-	"strings"
 	"testing"
 
 	"errors"
@@ -74,7 +73,7 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: false,
 			expected: expected{
-				comment:  "### cdk deploy (rollback)\n```\nresult\n```\nRollback is completed.",
+				comment:  "### cdk deploy (rollback)\n```\nresult\nRollback is completed.\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
 				isError:  false,
 			},
@@ -97,7 +96,7 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:        map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			resultHasDiff: true,
 			expected: expected{
-				comment:  "### cdk deploy (rollback)\n```\nresult\n```\nTo be continued.",
+				comment:  "### cdk deploy (rollback)\n```\nresult\nTo be continued.\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Run /deploy after reviewed"),
 				isError:  false,
 			},
@@ -120,7 +119,7 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:      map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			deployError: errors.New("cdk deploy error"),
 			expected: expected{
-				comment:  "### cdk deploy (rollback)\n```\nresult\n```\ncdk deploy error",
+				comment:  "### cdk deploy (rollback)\n```\nresult\ncdk deploy error\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
@@ -143,7 +142,7 @@ func TestRunner_Rollback(t *testing.T) {
 			labels:     map[string]constant.Label{constant.LabelDeployed.Name: constant.LabelDeployed},
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
-				comment:  "### cdk deploy (rollback)\n```\nresult\n```\ncdk diff error",
+				comment:  "### cdk deploy (rollback)\n```\nresult\ncdk diff error\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
@@ -254,9 +253,9 @@ func TestRunner_Rollback(t *testing.T) {
 			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(stacks, nil)
 		}
 		result := "result"
-		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts).Return(result, deployError)
+		cdkClient.EXPECT().Deploy(cdkPath, stacks, target.Contexts).Return(result, deployError)
 		if deployError == nil {
-			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", resultHasDiff, diffError)
+			cdkClient.EXPECT().Diff(cdkPath, nil, target.Contexts).Return("", resultHasDiff, diffError)
 		}
 		platformClient.EXPECT().CreateComment(ctx, expected.comment)
 		if deployError != nil || diffError != nil {

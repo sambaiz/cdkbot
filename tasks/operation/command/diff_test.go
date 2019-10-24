@@ -155,7 +155,7 @@ func TestRunner_Diff(t *testing.T) {
 		platformClient.EXPECT().ListComments(ctx).Return([]platform.Comment{}, nil)
 		cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 		result := "result"
-		cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return(result, resultHasDiff, diffError)
+		cdkClient.EXPECT().Diff(cdkPath, nil, target.Contexts).Return(result, resultHasDiff, diffError)
 		platformClient.EXPECT().CreateComment(ctx, fmt.Sprintf("### cdk diff\n```\n%s\n```", result)).Return(nil)
 		if diffError != nil {
 			return &Runner{

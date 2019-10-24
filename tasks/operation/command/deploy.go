@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sambaiz/cdkbot/tasks/operation/constant"
 	"github.com/sambaiz/cdkbot/tasks/operation/platform"
-	"strings"
 )
 
 // Deploy runs cdk deploy
@@ -51,11 +50,11 @@ func (r *Runner) Deploy(
 			errMessage string
 			hasDiff    bool
 		)
-		result, deployErr := r.cdk.Deploy(cdkPath, strings.Join(stacks, " "), target.Contexts)
+		result, deployErr := r.cdk.Deploy(cdkPath, stacks, target.Contexts)
 		if deployErr != nil {
 			errMessage = deployErr.Error()
 		} else {
-			_, hasDiff, err = r.cdk.Diff(cdkPath, "", target.Contexts)
+			_, hasDiff, err = r.cdk.Diff(cdkPath, nil, target.Contexts)
 			if err != nil {
 				errMessage = err.Error()
 			}
@@ -65,7 +64,7 @@ func (r *Runner) Deploy(
 		}
 		if err := r.platform.CreateComment(
 			ctx,
-			fmt.Sprintf("### cdk deploy\n```\n%s\n```\n%s", result, errMessage),
+			fmt.Sprintf("### cdk deploy\n```\n%s\n%s\n```", result, errMessage),
 		); err != nil {
 			return nil, err
 		}

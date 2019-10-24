@@ -25,7 +25,7 @@ func (r *Runner) Diff(
 		if err != nil {
 			return nil, err
 		}
-		diff, hasDiff, diffErr := r.cdk.Diff(cdkPath, "", target.Contexts)
+		diff, hasDiff, diffErr := r.cdk.Diff(cdkPath, nil, target.Contexts)
 		if err := r.platform.CreateComment(
 			ctx,
 			fmt.Sprintf("### cdk diff\n```\n%s\n```", diff),

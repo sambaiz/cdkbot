@@ -11,8 +11,8 @@ import (
 type Clienter interface {
 	Setup(repoPath string) error
 	List(repoPath string, contexts map[string]string) ([]string, error)
-	Diff(repoPath string, stacks string, contexts map[string]string) (string, bool, error)
-	Deploy(repoPath string, stacks string, contexts map[string]string) (string, error)
+	Diff(repoPath string, stacks []string, contexts map[string]string) (string, bool, error)
+	Deploy(repoPath string, stacks []string, contexts map[string]string) (string, error)
 }
 
 // Client is CDK client
@@ -54,8 +54,11 @@ func (*Client) List(repoPath string, contexts map[string]string) ([]string, erro
 }
 
 // Diff stack and returns (diff, hasDiff, error)
-func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) (string, bool, error) {
-	args := []string{"run", "cdk", "--", "diff", stacks}
+func (*Client) Diff(repoPath string, stacks []string, contexts map[string]string) (string, bool, error) {
+	args := []string{"run", "cdk", "--", "diff"}
+	for _, stack := range stacks {
+		args = append(args, stack)
+	}
 	for k, v := range contexts {
 		args = append(args, "-c", fmt.Sprintf("%s=%s", k, v))
 	}
@@ -76,8 +79,12 @@ func (*Client) Diff(repoPath string, stacks string, contexts map[string]string) 
 }
 
 // Deploy stack
-func (*Client) Deploy(repoPath string, stacks string, contexts map[string]string) (string, error) {
-	args := []string{"run", "cdk", "--", "deploy", stacks, "--require-approval", "never"}
+func (*Client) Deploy(repoPath string, stacks []string, contexts map[string]string) (string, error) {
+	args := []string{"run", "cdk", "--", "deploy"}
+	for _, stack := range stacks {
+		args = append(args, stack)
+	}
+	args = append(args, []string{"--require-approval", "never"}...)
 	for k, v := range contexts {
 		args = append(args, "-c", fmt.Sprintf("%s=%s", k, v))
 	}

@@ -54,7 +54,7 @@ _test:
 	go test ./...
 
 mock:
-	mockgen -package mock -source functions/operation/cdk/cdk.go -destination functions/operation/cdk/mock/cdk_mock.go
-	mockgen -package mock -source functions/operation/config/config.go -destination functions/operation/config/mock/config_mock.go
-	mockgen -package mock -source functions/operation/git/git.go -destination functions/operation/git/mock/git_mock.go
-	mockgen -package mock -source functions/operation/platform/client.go -destination functions/operation/platform/mock/client_mock.go
+	mockgen -package mock -source tasks/operation/cdk/cdk.go -destination tasks/operation/cdk/mock/cdk_mock.go
+	mockgen -package mock -source tasks/operation/config/config.go -destination tasks/operation/config/mock/config_mock.go
+	mockgen -package mock -source tasks/operation/git/git.go -destination tasks/operation/git/mock/git_mock.go
+	mockgen -package mock -source tasks/operation/platform/client.go -destination tasks/operation/platform/mock/client_mock.go

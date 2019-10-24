@@ -11,7 +11,6 @@ import (
 	"github.com/sambaiz/cdkbot/tasks/operation/logger"
 	"github.com/sambaiz/cdkbot/tasks/operation/platform"
 	platformMock "github.com/sambaiz/cdkbot/tasks/operation/platform/mock"
-	"strings"
 	"testing"
 
 	"errors"
@@ -49,7 +48,7 @@ func TestRunner_Deploy(t *testing.T) {
 			},
 			baseBranch: "develop",
 			expected: expected{
-				comment:  "### cdk deploy\n```\nresult\n```\n",
+				comment:  "### cdk deploy\n```\nresult\n\n```",
 				outState: newResultState(constant.StateMergeReady, "No targets are matched"),
 				isError:  false,
 			},
@@ -71,7 +70,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch:    "develop",
 			resultHasDiff: false,
 			expected: expected{
-				comment:  "### cdk deploy\n```\nresult\n```\n",
+				comment:  "### cdk deploy\n```\nresult\n\n```",
 				outState: newResultState(constant.StateMergeReady, "No diffs. Let's merge!"),
 				isError:  false,
 			},
@@ -89,7 +88,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch:    "develop",
 			resultHasDiff: true,
 			expected: expected{
-				comment:  "### cdk deploy\n```\nresult\n```\n",
+				comment:  "### cdk deploy\n```\nresult\n\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Go ahead with deploy."),
 				isError:  false,
 			},
@@ -107,7 +106,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch:  "develop",
 			deployError: errors.New("cdk deploy error"),
 			expected: expected{
-				comment:  "### cdk deploy\n```\nresult\n```\ncdk deploy error",
+				comment:  "### cdk deploy\n```\nresult\ncdk deploy error\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
@@ -125,7 +124,7 @@ func TestRunner_Deploy(t *testing.T) {
 			baseBranch: "develop",
 			diffError:  errors.New("cdk diff error"),
 			expected: expected{
-				comment:  "### cdk deploy\n```\nresult\n```\ncdk diff error",
+				comment:  "### cdk deploy\n```\nresult\ncdk diff error\n```",
 				outState: newResultState(constant.StateNotMergeReady, "Fix codes"),
 				isError:  false,
 			},
@@ -247,9 +246,9 @@ func TestRunner_Deploy(t *testing.T) {
 			cdkClient.EXPECT().List(cdkPath, target.Contexts).Return(test.inStacks, nil)
 		}
 		result := "result"
-		cdkClient.EXPECT().Deploy(cdkPath, strings.Join(test.inStacks, " "), target.Contexts).Return(result, test.deployError)
+		cdkClient.EXPECT().Deploy(cdkPath, test.inStacks, target.Contexts).Return(result, test.deployError)
 		if test.deployError == nil {
-			cdkClient.EXPECT().Diff(cdkPath, "", target.Contexts).Return("", test.resultHasDiff, test.diffError)
+			cdkClient.EXPECT().Diff(cdkPath, nil, target.Contexts).Return("", test.resultHasDiff, test.diffError)
 		}
 
 		platformClient.EXPECT().AddLabel(ctx, constant.LabelDeployed).Return(nil)

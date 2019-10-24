@@ -25,12 +25,12 @@ func TestClientDiff(t *testing.T) {
 	}
 	tests := []struct {
 		title    string
-		inStacks string
+		inStacks []string
 		expected expected
 	}{
 		{
 			title:    "has_no_diff",
-			inStacks: "stack1 stack2",
+			inStacks: []string{"stack1", "stack2"},
 			expected: expected{
 				outResult:  "diff: diff stack1 stack2 -c env=stg",
 				outHasDiff: false,
@@ -39,7 +39,7 @@ func TestClientDiff(t *testing.T) {
 		},
 		{
 			title:    "has_diff",
-			inStacks: "diffStack",
+			inStacks: []string{"diffStack"},
 			expected: expected{
 				outResult:  "diff: diff diffStack -c env=stg",
 				outHasDiff: true,
@@ -48,7 +48,7 @@ func TestClientDiff(t *testing.T) {
 		},
 		{
 			title:    "error",
-			inStacks: "failStack",
+			inStacks: []string{"failStack"},
 			expected: expected{
 				outResult:  "failed!",
 				outHasDiff: true,
@@ -74,12 +74,12 @@ func TestClientDeploy(t *testing.T) {
 	}
 	tests := []struct {
 		title    string
-		inStacks string
+		inStacks []string
 		expected expected
 	}{
 		{
 			title:    "success",
-			inStacks: "stack1 stack2",
+			inStacks: []string{"stack1", "stack2"},
 			expected: expected{
 				outResult: "deploy: deploy stack1 stack2 --require-approval never -c env=stg",
 				isError:   false,
@@ -87,7 +87,7 @@ func TestClientDeploy(t *testing.T) {
 		},
 		{
 			title:    "error",
-			inStacks: "failStack",
+			inStacks: []string{"failStack"},
 			expected: expected{
 				outResult: "failed!",
 				isError:   true,
