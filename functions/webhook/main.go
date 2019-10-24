@@ -25,7 +25,8 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 		}, err
 	}
 
-	sqsSvc := sqs.New(session.New())
+	sess := session.New()
+	sqsSvc := sqs.New(sess)
 	if _, err := sqsSvc.SendMessage(&sqs.SendMessageInput{
 		MessageBody:            aws.String(string(payload)),
 		QueueUrl:               aws.String(os.Getenv("OPERATION_QUEUE_URL")),
@@ -37,7 +38,7 @@ func handler(event events.APIGatewayProxyRequest) (response, error) {
 		}, err
 	}
 
-	ecsSvc := ecs.New(session.New())
+	ecsSvc := ecs.New(sess)
 	if _, err := ecsSvc.UpdateService(&ecs.UpdateServiceInput{
 		Cluster:                       aws.String(os.Getenv("TASK_ECS_CLUSTER_ARN")),
 		DesiredCount:                  aws.Int64(1),

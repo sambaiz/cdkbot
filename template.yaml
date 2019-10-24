@@ -147,7 +147,7 @@ Resources:
       Memory: '1024'
       ContainerDefinitions:
         - Name: 'cdkbot-operation'
-          Image: 'sambaiz/cdkbot-operation:0.4.0'
+          Image: 'sambaiz/cdkbot-operation:0.4.1'
           Essential: 'true'
           LogConfiguration:
             LogDriver: 'awslogs'
@@ -156,8 +156,6 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: 'cdkbot-operation'
           Environment:
-            - Name: 'TZ'
-              Value: 'Asia/Tokyo'
             - Name: 'PLATFORM'
               Value: !Ref Platform
             - Name: 'GITHUB_USER_NAME'
@@ -166,6 +164,14 @@ Resources:
               Value: !Ref GitHubAccessToken
             - Name: 'GITHUB_WEBHOOK_SECRET'
               Value: !Ref GitHubWebhookSecret
+            - Name: 'TASK_ECS_CLUSTER_ARN'
+              Value: !GetAtt ECSCluster.Arn
+            - Name: 'OPERATION_SERVICE_ARN'
+              # cannot ref due to circular dependency
+              # Value: !Ref OperationService
+              Value: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/operation'
+            - Name: 'OPERATION_QUEUE_URL'
+              Value: !Ref OperationQueue
   OperationTaskLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:

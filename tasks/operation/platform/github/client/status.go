@@ -26,6 +26,11 @@ func (c *Client) SetStatus(
 		return err
 	}
 
+	// maximum is 140 characters
+	if len(description) > 140 {
+		description = description[:140]
+	}
+
 	_, _, err = c.client.Repositories.CreateStatus(ctx, c.owner, c.repo, pr.HeadCommitHash, &github.RepoStatus{
 		State:       stateMap[state],
 		Context:     &statusContext,
