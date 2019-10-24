@@ -17,7 +17,6 @@ import (
 type response events.APIGatewayProxyResponse
 
 func handler(event events.APIGatewayProxyRequest) (response, error) {
-	// Container Overrides length must be at most 8192 so it must be reduced.
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return response{
