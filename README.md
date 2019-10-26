@@ -38,11 +38,13 @@ This force to see the latest diffs by running /diff before running /deploy on th
 
 ### Install
 
-Install from Serverless Application Repository
-
-- [us-east-1](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
-
-or `make deploy S3Bucket=*** SubnetID=subnet-***** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
+```
+$ make deploy S3Bucket=*** \ 
+              SubnetID=subnet-***** \ 
+              Platform=github GitHubUserName=*** \ 
+              GitHubAccessToken=*** \ 
+              GitHubWebhookSecret=***
+```
 
 - GitHubUserName & GitHubAccessToken
 
