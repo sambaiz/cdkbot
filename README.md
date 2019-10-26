@@ -34,22 +34,6 @@ This force to see the latest diffs by running /diff before running /deploy on th
 
 ![oudated diffs label](./doc-assets/outdated-diffs.png)
 
-## Why deploys before merging PR?
-
-cdk deploy sometimes fails unexpectedly due to runtime errors of CFn template.
-Therefore, if deploys after merging PR, 
-broken codes can be merged and surplus PRs are opened to revert or fix, which flagment changes. 
-In addition, if there are dependencies between stacks, it is necessary to control the deploy order when deleting resources, 
-but to do that, it must specify the execution order beforehand somehow.
-
-Deploying before merging PR has the advantage of resolving these issues but changes may be reverted.
-To prevent this, cdkbot takes measures these:
-
-- base branch is merged internally before running a command, and deployed PR is merged automatically
-- sets the number of concurrent executions to 1
-- `cdkbot:deployed` label to avoid overwriting other PR deploy
-- `cdkbot:outdated diffs` label to force to see latest differences
-
 ## Install & Settings
 
 ### Install
@@ -58,7 +42,7 @@ Install from Serverless Application Repository
 
 - [us-east-1](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:524580158183:applications~cdkbot) 
 
-or `make deploy S3Bucket=*** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
+or `make deploy S3Bucket=*** SubnetID=subnet-***** Platform=github GitHubUserName=*** GitHubAccessToken=*** GitHubWebhookSecret=***`.
 
 - GitHubUserName & GitHubAccessToken
 
@@ -66,7 +50,8 @@ Token can be generated at `Settings/Developer settings`.
 repo and write:discussion scopes are required.
 
 - GitHubWebhookSecret: Generate a random string.
-- Platform: Only github.
+- Platform: Only `github`.
+- SubnetID: an exist Subnet ID for running tasks on ECS fargate.
 
 
 ### cdkbot.yml
@@ -106,3 +91,19 @@ Add a webhook at repository's settings.
 
 After the first run, enable "Require status checks to pass before merging" 
 in the branch protection rule to prevent merging before deploying (Recommended)
+
+## Why deploys before merging PR?
+
+cdk deploy sometimes fails unexpectedly due to runtime errors of CFn template.
+Therefore, if deploys after merging PR, 
+broken codes can be merged and surplus PRs are opened to revert or fix, which flagment changes. 
+In addition, if there are dependencies between stacks, it is necessary to control the deploy order when deleting resources, 
+but to do that, it must specify the execution order beforehand somehow.
+
+Deploying before merging PR has the advantage of resolving these issues but changes may be reverted.
+To prevent this, cdkbot takes measures these:
+
+- base branch is merged internally before running a command, and deployed PR is merged automatically
+- sets the number of concurrent executions to 1
+- `cdkbot:deployed` label to avoid overwriting other PR deploy
+- `cdkbot:outdated diffs` label to force to see latest differences
