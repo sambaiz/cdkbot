@@ -34,9 +34,10 @@ Parameters:
     Description: Repository's webhook secret
     Type: String
     NoEcho: true
-  SubnetID:
-    Description: Subnet ID to run ECS task
-    Type: String
+  ECSAMI:
+    Description: AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
 
 Globals:
   Function:
@@ -139,7 +140,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       RequiresCompatibilities:
-        - 'FARGATE'
+        - 'EC2'
       NetworkMode: 'awsvpc'
       ExecutionRoleArn: !Ref TaskExecutionRole
       TaskRoleArn: !Ref OperationTaskRole
@@ -181,7 +182,7 @@ Resources:
     Type: AWS::ECS::Service
     Properties:
       Cluster: !GetAtt ECSCluster.Arn
-      LaunchType: FARGATE
+      LaunchType: EC2
       DesiredCount: 0
       TaskDefinition: !Ref OperationTaskDefinition
       NetworkConfiguration:
@@ -195,6 +196,62 @@ Resources:
     Properties:
       FifoQueue: true
       ContentBasedDeduplication: true
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones:
+        !GetAZs ""
+      LaunchConfigurationName: !Ref LaunchConfig
+      MinSize: "1"
+      MaxSize: "1"
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ['ec2.amazonaws.com']
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecs:CreateCluster'
+                  - 'ecs:DeregisterContainerInstance'
+                  - 'ecs:DiscoverPollEndpoint'
+                  - 'ecs:Poll'
+                  - 'ecs:RegisterContainerInstance'
+                  - 'ecs:StartTelemetrySession'
+                  - 'ecs:Submit*'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'EC2Role'
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref ECSAMI
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+      InstanceType: "t2.small"
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            VolumeSize: "30"
+            VolumeType: "gp2"
 Outputs:
   WebhookEndpoint:
     Description: "Webhook endpoint"
