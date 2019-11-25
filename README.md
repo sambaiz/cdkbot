@@ -53,8 +53,7 @@ repo and write:discussion scopes are required.
 
 - GitHubWebhookSecret: Generate a random string.
 - Platform: Only `github`.
-- SubnetID: an exist Subnet ID for running tasks on ECS fargate.
-
+- SubnetID: an exist Subnet ID for running EC2 instance.
 
 ### cdkbot.yml
 

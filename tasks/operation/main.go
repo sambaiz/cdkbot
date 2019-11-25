@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sambaiz/cdkbot/tasks/operation/logger"
 	"github.com/sambaiz/cdkbot/tasks/operation/platform/github"
-	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"go.uber.org/zap"

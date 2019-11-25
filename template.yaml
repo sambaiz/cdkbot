@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['cloudformation', 'cdk']
     HomePageUrl: https://github.com/sambaiz/cdkbot
-    SemanticVersion: 0.4.1
+    SemanticVersion: 0.5.0
     SourceCodeUrl: https://github.com/sambaiz/cdkbot
 
 Parameters:
@@ -34,11 +34,13 @@ Parameters:
     Description: Repository's webhook secret
     Type: String
     NoEcho: true
+  SubnetID:
+    Description: Subnet ID to run ECS task
+    Type: String
   ECSAMI:
     Description: AMI ID
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
-
 Globals:
   Function:
     Timeout: 600
@@ -141,14 +143,13 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - 'EC2'
-      NetworkMode: 'awsvpc'
       ExecutionRoleArn: !Ref TaskExecutionRole
       TaskRoleArn: !Ref OperationTaskRole
       Cpu: '512'
       Memory: '1024'
       ContainerDefinitions:
         - Name: 'cdkbot-operation'
-          Image: 'sambaiz/cdkbot-operation:0.4.1'
+          Image: 'sambaiz/cdkbot-operation:0.5.0'
           Essential: 'true'
           LogConfiguration:
             LogDriver: 'awslogs'
@@ -185,11 +186,6 @@ Resources:
       LaunchType: EC2
       DesiredCount: 0
       TaskDefinition: !Ref OperationTaskDefinition
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: 'ENABLED'
-          Subnets:
-            - !Ref SubnetID
       ServiceName: 'operation'
   OperationQueue:
     Type: AWS::SQS::Queue
@@ -200,8 +196,8 @@ Resources:
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      AvailabilityZones:
-        !GetAZs ""
+      VPCZoneIdentifier: 
+        - !Ref SubnetID
       LaunchConfigurationName: !Ref LaunchConfig
       MinSize: "1"
       MaxSize: "1"
