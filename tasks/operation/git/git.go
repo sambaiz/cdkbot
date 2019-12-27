@@ -58,7 +58,12 @@ func (c *Client) Merge(path, branch string) error {
 
 // Checkout file of branch
 func (c *Client) Checkout(path, fileName, branch string) error {
-	cmd := exec.Command("git", "checkout", branch, fileName)
+	cmd := exec.Command("git", "fetch", "origin", branch)
+	cmd.Dir = path
+	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git fetch failed: %s %v", string(out), err)
+	}
+	cmd = exec.Command("git", "checkout", fmt.Sprintf("origin/%s", branch), fileName)
 	cmd.Dir = path
 	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
 		return fmt.Errorf("git checkout %s of %s failed: %s %v", fileName, branch, string(out), err)
