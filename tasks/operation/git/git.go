@@ -9,7 +9,8 @@ import (
 type Clienter interface {
 	Clone(path string, hash *string) error
 	Merge(path, branch string) error
-	Checkout(path, fileName, branch string) error
+	Checkout(path, branch string) error
+	CheckoutFile(path, fileName, branch string) error
 }
 
 // Client is git client
@@ -46,9 +47,9 @@ func (c *Client) Clone(path string, hash *string) error {
 	return nil
 }
 
-// Merge a branch
-func (c *Client) Merge(path, branch string) error {
-	cmd := exec.Command("git", "merge", branch, "-m", `"cdkbot merged"`)
+// Merge a branch or hash
+func (c *Client) Merge(path, target string) error {
+	cmd := exec.Command("git", "merge", target, "-m", `"cdkbot merged"`)
 	cmd.Dir = path
 	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
 		return fmt.Errorf("git merge failed: %s %v", string(out), err)
@@ -56,8 +57,23 @@ func (c *Client) Merge(path, branch string) error {
 	return nil
 }
 
-// Checkout file of branch
-func (c *Client) Checkout(path, fileName, branch string) error {
+// Checkout branch
+func (c *Client) Checkout(path, branch string) error {
+	cmd := exec.Command("git", "fetch", "origin", branch)
+	cmd.Dir = path
+	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git fetch failed: %s %v", string(out), err)
+	}
+	cmd = exec.Command("git", "checkout", fmt.Sprintf("origin/%s", branch))
+	cmd.Dir = path
+	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("git checkout %s failed: %s %v", branch, string(out), err)
+	}
+	return nil
+}
+
+// CheckoutFile of branch
+func (c *Client) CheckoutFile(path, fileName, branch string) error {
 	cmd := exec.Command("git", "fetch", "origin", branch)
 	cmd.Dir = path
 	if out, err := cmd.CombinedOutput(); err != nil || cmd.ProcessState.ExitCode() != 0 {

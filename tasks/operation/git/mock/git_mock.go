@@ -61,15 +61,29 @@ func (mr *MockClienterMockRecorder) Merge(path, branch interface{}) *gomock.Call
 }
 
 // Checkout mocks base method
-func (m *MockClienter) Checkout(path, fileName, branch string) error {
+func (m *MockClienter) Checkout(path, branch string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Checkout", path, fileName, branch)
+	ret := m.ctrl.Call(m, "Checkout", path, branch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Checkout indicates an expected call of Checkout
-func (mr *MockClienterMockRecorder) Checkout(path, fileName, branch interface{}) *gomock.Call {
+func (mr *MockClienterMockRecorder) Checkout(path, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockClienter)(nil).Checkout), path, fileName, branch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checkout", reflect.TypeOf((*MockClienter)(nil).Checkout), path, branch)
+}
+
+// CheckoutFile mocks base method
+func (m *MockClienter) CheckoutFile(path, fileName, branch string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckoutFile", path, fileName, branch)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckoutFile indicates an expected call of CheckoutFile
+func (mr *MockClienterMockRecorder) CheckoutFile(path, fileName, branch interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckoutFile", reflect.TypeOf((*MockClienter)(nil).CheckoutFile), path, fileName, branch)
 }

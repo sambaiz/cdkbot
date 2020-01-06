@@ -108,7 +108,10 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 		if err := r.git.Clone(clonePath, &pr.HeadCommitHash); err != nil {
 			return "", nil, nil, nil, err
 		}
-		if err := r.git.Merge(clonePath, fmt.Sprintf("remotes/origin/%s", pr.BaseBranch)); err != nil {
+		if err := r.git.Checkout(clonePath, pr.BaseBranch); err != nil {
+			return "", nil, nil, nil, err
+		}
+		if err := r.git.Merge(clonePath, pr.HeadCommitHash); err != nil {
 			return "", nil, nil, nil, err
 		}
 	} else {
@@ -127,10 +130,10 @@ func (r *Runner) setup(ctx context.Context, cloneHead bool) (string, *config.Con
 	}
 
 	// override cdkbot.yml & cdk.yml of base branch
-	if err := r.git.Checkout(clonePath, "cdkbot.yml", pr.BaseBranch); err != nil {
+	if err := r.git.CheckoutFile(clonePath, "cdkbot.yml", pr.BaseBranch); err != nil {
 		return "", nil, nil, nil, err
 	}
-	if err := r.git.Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch); err != nil {
+	if err := r.git.CheckoutFile(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch); err != nil {
 		return "", nil, nil, nil, err
 	}
 
