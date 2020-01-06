@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['cloudformation', 'cdk']
     HomePageUrl: https://github.com/sambaiz/cdkbot
-    SemanticVersion: 0.4.2
+    SemanticVersion: 0.4.3
     SourceCodeUrl: https://github.com/sambaiz/cdkbot
 
 Parameters:
@@ -147,7 +147,7 @@ Resources:
       Memory: '1024'
       ContainerDefinitions:
         - Name: 'cdkbot-operation'
-          Image: 'sambaiz/cdkbot-operation:0.4.2'
+          Image: 'sambaiz/cdkbot-operation:0.4.3'
           Essential: 'true'
           LogConfiguration:
             LogDriver: 'awslogs'

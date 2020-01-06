@@ -102,7 +102,8 @@ func constructSetupMock(
 	platformClient.EXPECT().GetPullRequest(ctx).Return(pr, nil)
 	if cloneHead {
 		gitClient.EXPECT().Clone(clonePath, &pr.HeadCommitHash).Return(nil)
-		gitClient.EXPECT().Merge(clonePath, fmt.Sprintf("remotes/origin/%s", pr.BaseBranch)).Return(nil)
+		gitClient.EXPECT().Checkout(clonePath, pr.BaseBranch).Return(nil)
+		gitClient.EXPECT().Merge(clonePath, pr.HeadCommitHash).Return(nil)
 	} else {
 		gitClient.EXPECT().Clone(clonePath, &pr.BaseCommitHash).Return(nil)
 	}
@@ -112,8 +113,8 @@ func constructSetupMock(
 		return
 	}
 
-	gitClient.EXPECT().Checkout(clonePath, "cdkbot.yml", pr.BaseBranch).Return(nil)
-	gitClient.EXPECT().Checkout(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch).Return(nil)
+	gitClient.EXPECT().CheckoutFile(clonePath, "cdkbot.yml", pr.BaseBranch).Return(nil)
+	gitClient.EXPECT().CheckoutFile(fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot), "cdk.json", pr.BaseBranch).Return(nil)
 
 	cdkPath := fmt.Sprintf("%s/%s", clonePath, cfg.CDKRoot)
 	cdkClient.EXPECT().Setup(cdkPath).Return(nil)
