@@ -16,7 +16,7 @@ build:
 build-tasks-image:
 	GOOS=linux GOARCH=amd64 go build -o tasks/operation/operation ./tasks/operation
 	docker build -t sambaiz/cdkbot-operation:${Version} -f ./tasks/operation/Dockerfile .
-	# docker push sambaiz/cdkbot-operation:${Version}
+	docker push sambaiz/cdkbot-operation:${Version}
 
 package: build
 	sam package --output-template-file packaged.yaml --s3-bucket ${S3Bucket} --region ${Region}
