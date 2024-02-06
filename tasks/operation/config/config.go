@@ -1,9 +1,8 @@
 package config
 
 import (
-	"io/ioutil"
-
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v3"
+	"os"
 )
 
 // Readerer is interface of config reader
@@ -29,7 +28,7 @@ type Target struct {
 
 // Read config
 func (*Reader) Read(path string) (*Config, error) {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

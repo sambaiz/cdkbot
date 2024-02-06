@@ -34,11 +34,12 @@ publish: package
 	sam publish -t packaged.yaml --region ${Region}
 
 install-tools:
-	go get -u golang.org/x/lint/golint
-	go get -u github.com/golang/mock/mockgen
+	go install go.uber.org/mock/mockgen@latest
 
-lint:
-	golint -set_exit_status $$(go list ./...)
+lint: vet
+
+vet:
+	go vet ./...
 
 test:
 	docker build -t cdkbot-test -f ./test/Dockerfile .
